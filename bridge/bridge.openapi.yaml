@@ -1,0 +1,244 @@
+openapi: 3.0.3
+info:
+  title: Konte Bridge API
+  version: 0.1.0
+  description: >
+    LAN 本地 Bridge（sidecar 进程）HTTP API。用于平板 Web 前端与 OpenToonz 分镜编辑器协作，
+    单作者、单项目、局域网。桌面端启动分镜编辑器时拉起本服务，平板扫码/PIN 配对后使用。
+    WebSocket(/ws) 用于推送事件（cut 更新、缩略图就绪、导出进度、接管），见《工程交接技术规格》§3。
+servers:
+  - url: http://127.0.0.1:{port}
+    variables:
+      port:
+        default: "17890"
+security:
+  - bearerAuth: []
+paths:
+  /api/pair:
+    post:
+      summary: 用 PIN 配对，换取会话 token（无需鉴权）
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pin, deviceName]
+              properties:
+                pin: { type: string, example: "482913" }
+                deviceName: { type: string, example: "iPad-Pro-A" }
+      responses:
+        "200":
+          description: 配对成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  projectId: { type: string }
+                  deviceId: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/project:
+    get:
+      summary: 获取项目元信息与画幅规格（供前端设定画布 16:9 + bleed + DPI + fps）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectInfo" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/cuts:
+    get:
+      summary: cut 列表（摘要）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CutSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/cuts/{cutId}:
+    parameters:
+      - { name: cutId, in: path, required: true, schema: { type: string } }
+    get:
+      summary: 获取单个 cut 详情（含 duration/action/dialogue/musicSe/frame/drawings/lock/export）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      summary: 更新 cut 元数据（action/dialogue/duration/frame 等；不改画面）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        "200":
+          description: 已更新，返回最新 revision
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revision: { type: integer }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/cuts/{cutId}/drawing:
+    parameters:
+      - { name: cutId, in: path, required: true, schema: { type: string } }
+    post:
+      summary: 上传/更新该 cut 的分镜画面（PNG）。服务端落盘→导入 Raster level→更新 konte→刷新缩略图。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                frameKind: { type: string, enum: [standard, oversize] }
+                deviceId: { type: string }
+      responses:
+        "200":
+          description: 已保存
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  drawingId: { type: string }
+                  revision: { type: integer }
+                  thumbnailUrl: { type: string }
+        "413": { description: 文件过大 }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/cuts/{cutId}/lock:
+    parameters:
+      - { name: cutId, in: path, required: true, schema: { type: string } }
+    post:
+      summary: 获取该 cut 的编辑锁（单活接管/防双开）
+      responses:
+        "200": { description: 已持锁 }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      summary: 释放该 cut 的编辑锁
+      responses:
+        "200": { description: 已释放 }
+  /api/cuts/{cutId}/thumbnail:
+    parameters:
+      - { name: cutId, in: path, required: true, schema: { type: string } }
+    get:
+      summary: 取该 cut 缩略图（PNG）
+      responses:
+        "200":
+          description: OK
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/export:
+    post:
+      summary: 触发导出（仅当 project.status==final；否则 422）
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targets:
+                  type: object
+                  properties:
+                    scenes: { type: boolean, default: true }
+                    pdf: { type: boolean, default: true }
+                    package: { type: boolean, default: true }
+      responses:
+        "202":
+          description: 已受理，返回 jobId
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string }
+        "422": { description: 未定稿 / 存在 TBD 时长，拒绝导出 }
+  /api/export/{jobId}:
+    parameters:
+      - { name: jobId, in: path, required: true, schema: { type: string } }
+    get:
+      summary: 查询导出任务状态
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [queued, running, done, failed] }
+                  progress: { type: number, minimum: 0, maximum: 1 }
+                  outputs:
+                    type: array
+                    items: { type: string }
+                  error: { type: string }
+        "404": { $ref: "#/components/responses/NotFound" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Unauthorized:
+      description: token 无效/缺失
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: 锁冲突 / 版本冲突
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      properties:
+        code: { type: string, example: "LOCKED" }
+        message: { type: string }
+    ProjectInfo:
+      type: object
+      properties:
+        projectId: { type: string }
+        title: { type: string }
+        status: { type: string, enum: [draft, final] }
+        fps: { type: integer, example: 24 }
+        frame: { type: object, properties: { width: { type: integer }, height: { type: integer }, aspect: { type: string } } }
+        bleed: { type: object }
+        cameraBox: { type: object }
+        template: { type: string }
+    CutSummary:
+      type: object
+      properties:
+        id: { type: string }
+        scene: { type: string }
+        cut: { type: string }
+        order: { type: integer }
+        state: { type: string, enum: [draft, final] }
+        durationStatus: { type: string, enum: [fixed, tbd, default] }
+        thumbnailUrl: { type: string }

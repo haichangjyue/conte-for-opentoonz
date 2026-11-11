@@ -1,0 +1,25 @@
+# build
+build/
+out/
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+# IDE
+.vs/
+.vscode/
+.idea/
+CMakeFiles/
+CMakeCache.txt
+# python (PoC / bridge)
+__pycache__/
+*.pyc
+.pytest_cache/
+# bridge runtime artifacts
+.bridge/
++drawings/
+# NEVER commit private repo here
+../konte-studio/
+konte-studio/

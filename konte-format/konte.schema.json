@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/konte.schema.json",
+  "title": "Konte Project",
+  "description": "OpenToonz 日本分镜（絵コンテ）项目数据格式 —— 单一事实源。画面文件为真相，本 JSON 为元数据真相。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "project", "exportConfig", "sequences", "cuts", "meta"],
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^\\d+\\.\\d+(-draft)?$" },
+    "project": { "$ref": "#/$defs/project" },
+    "exportConfig": { "$ref": "#/$defs/exportConfig" },
+    "sequences": { "type": "array", "items": { "$ref": "#/$defs/sequence" } },
+    "cuts": { "type": "array", "items": { "$ref": "#/$defs/cut" } },
+    "meta": { "$ref": "#/$defs/meta" }
+  },
+  "$defs": {
+    "rect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "w": { "type": "integer", "minimum": 1 },
+        "h": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "status", "fps", "template", "frame", "bleed", "cameraBox"],
+      "properties": {
+        "title": { "type": "string" },
+        "status": { "enum": ["draft", "final"], "description": "final = 决定稿已锁定，方可导出" },
+        "fps": { "type": "integer", "minimum": 1 },
+        "template": { "type": "string", "description": "模板 .tnz 路径或名" },
+        "frame": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height", "aspect"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 },
+            "aspect": { "type": "string" }
+          }
+        },
+        "bleed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["left", "right", "top", "bottom"],
+          "properties": {
+            "left": { "type": "integer" }, "right": { "type": "integer" },
+            "top": { "type": "integer" }, "bottom": { "type": "integer" }
+          }
+        },
+        "cameraBox": { "$ref": "#/$defs/rect" }
+      }
+    },
+    "exportConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "granularity", "namingPattern", "onTbdDuration", "defaultTbdFrames"],
+      "properties": {
+        "mode": { "enum": ["renderedRef"], "description": "Q8：仅渲染位图参考层" },
+        "granularity": { "enum": ["perCut"] },
+        "namingPattern": { "type": "string", "default": "{scene}_{cut}.tnz" },
+        "onTbdDuration": { "enum": ["blockUntilResolved", "defaultWithWarning"], "default": "blockUntilResolved" },
+        "defaultTbdFrames": { "type": "integer", "minimum": 1, "default": 24 }
+      }
+    },
+    "sequence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" }
+      }
+    },
+    "drawing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "level", "source", "revision", "updatedAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "enum": ["panel"] },
+        "level": { "type": "string", "description": "画面文件路径（PNG/level），相对项目或 $scenefolder" },
+        "source": { "enum": ["web", "desktop"] },
+        "deviceId": { "type": ["string", "null"] },
+        "revision": { "type": "integer", "minimum": 1 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "duration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "totalFrames"],
+      "properties": {
+        "status": { "enum": ["fixed", "tbd", "default"], "description": "tbd=未定时长；导出前须转为 fixed" },
+        "seconds": { "type": ["integer", "null"], "minimum": 0 },
+        "frames": { "type": ["integer", "null"], "minimum": 0 },
+        "totalFrames": { "type": "integer", "minimum": 1, "description": "= seconds*fps + frames；tbd 时为占位值" }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "rect"],
+      "properties": {
+        "kind": { "enum": ["standard", "oversize"], "description": "oversize=超框/例外画幅，用于运镜" },
+        "rect": { "$ref": "#/$defs/rect" },
+        "bleedNote": { "type": "string" }
+      }
+    },
+    "dialogueLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "character": { "type": "string" },
+        "text": { "type": "string" },
+        "offscreen": { "type": "boolean", "default": false }
+      }
+    },
+    "musicSe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "atFrame": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["note", "keyframes"],
+      "properties": {
+        "note": { "type": "string" },
+        "keyframes": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "lock": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["byDevice", "at"],
+          "properties": {
+            "byDevice": { "type": "string" },
+            "at": { "type": "string", "format": "date-time" },
+            "ttl": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "cutExport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["notExported", "exported", "stale"], "description": "stale=决定稿后又改过" },
+        "sceneFile": { "type": ["string", "null"] }
+      }
+    },
+    "cut": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scene", "cut", "number", "order", "duration", "frame", "drawings", "action", "dialogue", "musicSe", "camera", "state", "export", "revision", "updatedAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "sequenceId": { "type": ["string", "null"] },
+        "scene": { "type": "string" },
+        "cut": { "type": "string" },
+        "number": { "type": "integer", "minimum": 1 },
+        "page": { "type": "integer", "minimum": 1 },
+        "order": { "type": "integer", "minimum": 0 },
+        "duration": { "$ref": "#/$defs/duration" },
+        "frame": { "$ref": "#/$defs/frame" },
+        "drawings": { "type": "array", "items": { "$ref": "#/$defs/drawing" }, "minItems": 1 },
+        "action": { "type": "string" },
+        "dialogue": { "type": "array", "items": { "$ref": "#/$defs/dialogueLine" } },
+        "musicSe": { "type": "array", "items": { "$ref": "#/$defs/musicSe" } },
+        "camera": { "$ref": "#/$defs/camera" },
+        "state": { "enum": ["draft", "final"], "description": "单 cut 定稿状态" },
+        "lock": { "$ref": "#/$defs/lock" },
+        "export": { "$ref": "#/$defs/cutExport" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["createdAt", "updatedAt", "authors"],
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "authors": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

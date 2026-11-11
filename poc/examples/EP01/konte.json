@@ -1,0 +1,420 @@
+{
+  "schemaVersion": "1.0",
+  "project": {
+    "title": "EP01",
+    "status": "final",
+    "fps": 24,
+    "template": "scfilms_StoryBoard.psd",
+    "frame": {
+      "width": 1920,
+      "height": 1080,
+      "aspect": "16:9"
+    },
+    "bleed": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "cameraBox": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080
+    }
+  },
+  "exportConfig": {
+    "mode": "renderedRef",
+    "granularity": "perCut",
+    "namingPattern": "{scene}_{cut}.tnz",
+    "onTbdDuration": "blockUntilResolved",
+    "defaultTbdFrames": 24
+  },
+  "sequences": [
+    {
+      "id": "seq1",
+      "title": "A Part"
+    }
+  ],
+  "cuts": [
+    {
+      "id": "ep01-c001",
+      "sequenceId": "seq1",
+      "scene": "EP01",
+      "cut": "C001",
+      "number": 1,
+      "order": 1,
+      "duration": {
+        "status": "fixed",
+        "seconds": 3,
+        "frames": 0,
+        "totalFrames": 72
+      },
+      "frame": {
+        "kind": "standard",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "drawings": [
+        {
+          "id": "C001-d1",
+          "role": "panel",
+          "level": "panels/C001.png",
+          "source": "desktop",
+          "deviceId": "desk-main",
+          "revision": 1,
+          "updatedAt": "2026-11-12T04:47:03+08:00"
+        }
+      ],
+      "action": "A-part 开场：城市远景。カメラ固定。角色の動きに合わせて間を取る。",
+      "dialogue": [
+        {
+          "character": "AKIRA",
+          "text": "……行くぞ。",
+          "offscreen": false
+        }
+      ],
+      "musicSe": [],
+      "camera": {
+        "note": "固定",
+        "keyframes": []
+      },
+      "state": "final",
+      "lock": null,
+      "export": {
+        "status": "notExported",
+        "sceneFile": null
+      },
+      "revision": 1,
+      "updatedAt": "2026-11-12T04:47:03+08:00"
+    },
+    {
+      "id": "ep01-c002",
+      "sequenceId": "seq1",
+      "scene": "EP01",
+      "cut": "C002",
+      "number": 2,
+      "order": 2,
+      "duration": {
+        "status": "fixed",
+        "seconds": 1,
+        "frames": 12,
+        "totalFrames": 36
+      },
+      "frame": {
+        "kind": "standard",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "drawings": [
+        {
+          "id": "C002-d1",
+          "role": "panel",
+          "level": "panels/C002.png",
+          "source": "desktop",
+          "deviceId": "desk-main",
+          "revision": 1,
+          "updatedAt": "2026-11-12T04:47:03+08:00"
+        }
+      ],
+      "action": "主角入门（中景）。カメラ固定。角色の動きに合わせて間を取る。",
+      "dialogue": [],
+      "musicSe": [],
+      "camera": {
+        "note": "固定",
+        "keyframes": []
+      },
+      "state": "final",
+      "lock": null,
+      "export": {
+        "status": "notExported",
+        "sceneFile": null
+      },
+      "revision": 1,
+      "updatedAt": "2026-11-12T04:47:03+08:00"
+    },
+    {
+      "id": "ep01-c003",
+      "sequenceId": "seq1",
+      "scene": "EP01",
+      "cut": "C003",
+      "number": 3,
+      "order": 3,
+      "duration": {
+        "status": "fixed",
+        "seconds": 2,
+        "frames": 0,
+        "totalFrames": 48
+      },
+      "frame": {
+        "kind": "standard",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "drawings": [
+        {
+          "id": "C003-d1",
+          "role": "panel",
+          "level": "panels/C003.png",
+          "source": "desktop",
+          "deviceId": "desk-main",
+          "revision": 1,
+          "updatedAt": "2026-11-12T04:47:03+08:00"
+        }
+      ],
+      "action": "对话：反应镜头。カメラ固定。角色の動きに合わせて間を取る。",
+      "dialogue": [
+        {
+          "character": "AKIRA",
+          "text": "……行くぞ。",
+          "offscreen": false
+        }
+      ],
+      "musicSe": [],
+      "camera": {
+        "note": "固定",
+        "keyframes": []
+      },
+      "state": "final",
+      "lock": null,
+      "export": {
+        "status": "notExported",
+        "sceneFile": null
+      },
+      "revision": 1,
+      "updatedAt": "2026-11-12T04:47:03+08:00"
+    },
+    {
+      "id": "ep01-c004",
+      "sequenceId": "seq1",
+      "scene": "EP01",
+      "cut": "C004",
+      "number": 4,
+      "order": 4,
+      "duration": {
+        "status": "fixed",
+        "seconds": 0,
+        "frames": 18,
+        "totalFrames": 18
+      },
+      "frame": {
+        "kind": "oversize",
+        "rect": {
+          "x": -240,
+          "y": 0,
+          "w": 2400,
+          "h": 1080
+        }
+      },
+      "drawings": [
+        {
+          "id": "C004-d1",
+          "role": "panel",
+          "level": "panels/C004.png",
+          "source": "desktop",
+          "deviceId": "desk-main",
+          "revision": 1,
+          "updatedAt": "2026-11-12T04:47:03+08:00"
+        }
+      ],
+      "action": "横摇（超框 bleed）。カメラ固定。角色の動きに合わせて間を取る。",
+      "dialogue": [],
+      "musicSe": [],
+      "camera": {
+        "note": "横摇（超框 bleed）",
+        "keyframes": []
+      },
+      "state": "final",
+      "lock": null,
+      "export": {
+        "status": "notExported",
+        "sceneFile": null
+      },
+      "revision": 1,
+      "updatedAt": "2026-11-12T04:47:03+08:00"
+    },
+    {
+      "id": "ep01-c005",
+      "sequenceId": "seq1",
+      "scene": "EP01",
+      "cut": "C005",
+      "number": 5,
+      "order": 5,
+      "duration": {
+        "status": "fixed",
+        "seconds": 4,
+        "frames": 6,
+        "totalFrames": 102
+      },
+      "frame": {
+        "kind": "standard",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "drawings": [
+        {
+          "id": "C005-d1",
+          "role": "panel",
+          "level": "panels/C005.png",
+          "source": "desktop",
+          "deviceId": "desk-main",
+          "revision": 1,
+          "updatedAt": "2026-11-12T04:47:03+08:00"
+        }
+      ],
+      "action": "奔跑（远景）。カメラ固定。角色の動きに合わせて間を取る。",
+      "dialogue": [
+        {
+          "character": "AKIRA",
+          "text": "……行くぞ。",
+          "offscreen": false
+        }
+      ],
+      "musicSe": [
+        {
+          "text": "SE: 足音",
+          "atFrame": 0
+        }
+      ],
+      "camera": {
+        "note": "固定",
+        "keyframes": []
+      },
+      "state": "final",
+      "lock": null,
+      "export": {
+        "status": "notExported",
+        "sceneFile": null
+      },
+      "revision": 1,
+      "updatedAt": "2026-11-12T04:47:03+08:00"
+    },
+    {
+      "id": "ep01-c006",
+      "sequenceId": "seq1",
+      "scene": "EP01",
+      "cut": "C006",
+      "number": 6,
+      "order": 6,
+      "duration": {
+        "status": "fixed",
+        "seconds": 2,
+        "frames": 12,
+        "totalFrames": 60
+      },
+      "frame": {
+        "kind": "standard",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "drawings": [
+        {
+          "id": "C006-d1",
+          "role": "panel",
+          "level": "panels/C006.png",
+          "source": "desktop",
+          "deviceId": "desk-main",
+          "revision": 1,
+          "updatedAt": "2026-11-12T04:47:03+08:00"
+        }
+      ],
+      "action": "特写：眼神。カメラ固定。角色の動きに合わせて間を取る。",
+      "dialogue": [],
+      "musicSe": [],
+      "camera": {
+        "note": "固定",
+        "keyframes": []
+      },
+      "state": "final",
+      "lock": null,
+      "export": {
+        "status": "notExported",
+        "sceneFile": null
+      },
+      "revision": 1,
+      "updatedAt": "2026-11-12T04:47:03+08:00"
+    },
+    {
+      "id": "ep01-c007",
+      "sequenceId": "seq1",
+      "scene": "EP01",
+      "cut": "C007",
+      "number": 7,
+      "order": 7,
+      "duration": {
+        "status": "fixed",
+        "seconds": 3,
+        "frames": 0,
+        "totalFrames": 72
+      },
+      "frame": {
+        "kind": "standard",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "drawings": [
+        {
+          "id": "C007-d1",
+          "role": "panel",
+          "level": "panels/C007.png",
+          "source": "desktop",
+          "deviceId": "desk-main",
+          "revision": 1,
+          "updatedAt": "2026-11-12T04:47:03+08:00"
+        }
+      ],
+      "action": "转场：天空空镜。カメラ固定。角色の動きに合わせて間を取る。",
+      "dialogue": [
+        {
+          "character": "AKIRA",
+          "text": "……行くぞ。",
+          "offscreen": false
+        }
+      ],
+      "musicSe": [],
+      "camera": {
+        "note": "固定",
+        "keyframes": []
+      },
+      "state": "final",
+      "lock": null,
+      "export": {
+        "status": "notExported",
+        "sceneFile": null
+      },
+      "revision": 1,
+      "updatedAt": "2026-11-12T04:47:03+08:00"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-11-12T04:47:03+08:00",
+    "updatedAt": "2026-11-12T04:47:03+08:00",
+    "authors": [
+      "Director"
+    ]
+  }
+}

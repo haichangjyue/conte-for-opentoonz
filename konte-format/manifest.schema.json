@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/manifest.schema.json",
+  "title": "Konte Export Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["projectId", "generatedAt", "fps", "items"],
+  "properties": {
+    "projectId": { "type": "string" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "fps": { "type": "integer", "minimum": 1 },
+    "template": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cutId", "sceneFile", "totalFrames"],
+        "properties": {
+          "cutId": { "type": "string" },
+          "scene": { "type": "string" },
+          "cut": { "type": "string" },
+          "order": { "type": "integer" },
+          "sceneFile": { "type": "string" },
+          "referenceImage": { "type": "string" },
+          "totalFrames": { "type": "integer", "minimum": 1 },
+          "durationSec": { "type": "number" },
+          "page": { "type": "integer" }
+        }
+      }
+    },
+    "sequences": { "type": "array", "items": { "type": "object" } },
+    "pdf": { "type": "string" },
+    "packageDir": { "type": "string" }
+  }
+}
