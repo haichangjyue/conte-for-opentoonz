@@ -52,7 +52,9 @@ cd poc; $env:PYTHONPATH = (Get-Location).Path
    - ✅ OpenToonz 源码接入 `toonz/`（浅克隆 submodule）。
    - ✅ `konte-core/` C++ 内核 + `konte-export`（真实 OT API），Windows 环境构建成功。
    - ✅ 7/7 cut 生成真实 `.tnz`，`loadFrameCount` 与时长帧数逐一相等；参考层/Note 写入正确。
-   - ⏳ 收尾：参考层只读锁定、声音切片、模板套用、打包改相对路径（`TODO(P1-runtime)`）。
+   - ✅ 参考层锁定（`setIsReadOnly` + 参考 PNG 只读）、声音列（`TXshSoundColumn`，验证 cut sounds=1）、
+     `loadTnzFile` 重载校验通过。
+   - ⏳ 收尾：模板 `.tnz` 套用、打包改相对 `$scenefolder`。
 2. **P4 收尾**：模板多套坐标配置（换 PSD）、字体授权锁定（Noto/Source Han）。
 3. **P2 Bridge 生产化**：内嵌 `QTcpServer/QWebSocketServer` 或加固 sidecar 启动生命周期。
 4. **P5 边界**：不同时长/超框/声音切片批量跑；>200 cut 性能与断点续。

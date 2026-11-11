@@ -39,7 +39,7 @@ if(KONTE_WITH_OPENTOONZ)
       ${SDKROOT}/libmypaint/dist/64/include/libmypaint
     )
     target_link_libraries(konte-core PUBLIC
-      toonzlib tnzcore tnzbase tnzext image
+      toonzlib tnzcore tnzbase tnzext image sound
       Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Script Qt5::Xml
     )
   endif()

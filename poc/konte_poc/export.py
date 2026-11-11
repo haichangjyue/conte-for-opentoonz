@@ -14,7 +14,9 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import stat
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -76,6 +78,9 @@ def export_project(
         # 渲染参考层（全分辨率）
         ref_img = render.render_reference(panel, fw, fh)
         ref_path = scenes_dir / f"{stem}.ref.png"
+        # 参考层可能已被导出内核置为只读（锁定）；重导出前先恢复可写
+        if ref_path.exists():
+            os.chmod(ref_path, stat.S_IWRITE | stat.S_IREAD)
         ref_img.save(ref_path, "PNG")
         # 成形参考图（交付）
         shutil.copyfile(ref_path, refs_dir / f"{stem}.png")

@@ -11,10 +11,15 @@
 #include "toonz/txsheet.h"
 #include "toonz/txshcell.h"
 #include "toonz/txshlevel.h"
+#include "toonz/txshsimplelevel.h"
 #include "toonz/txshnoteset.h"
+#include "toonz/txshsoundcolumn.h"
+#include "toonz/txshsoundlevel.h"
+#include "toonz/levelset.h"
 #include "tfilepath.h"
 #include "tgeometry.h"
 #include "tnzimage.h"   // initImageIo
+#include "tnzsound.h"   // initSoundIo
 #include "tiio_std.h"   // Tiio::defineStd
 #include "timage_io.h"
 
@@ -47,6 +52,32 @@ static QString toHtml(const std::string& s) {
   return t;
 }
 
+// 重新用 OpenToonz 打开生成的 .tnz，校验帧数/声音/注记（P1 验收）
+static bool verifyReload(const std::string& outFile, int N, bool expectSound,
+                         std::string& vr) {
+  try {
+    ToonzScene s;
+    TFilePath fp(outFile);
+    s.setScenePath(fp);
+    s.loadTnzFile(fp);  // 仅加载场景数据（不含项目/资源）
+    TXsheet* xsh = s.getXsheet();
+    int fc = xsh ? xsh->getFrameCount() : -1;
+    std::vector<TXshSoundColumn*> scs;
+    s.getSoundColumns(scs);
+    int notes = (xsh && xsh->getNotes()) ? xsh->getNotes()->getCount() : 0;
+    vr = "reload: frameCount=" + std::to_string(fc) + " sounds=" +
+         std::to_string(scs.size()) + " notes=" + std::to_string(notes);
+    bool ok = (fc == N) && (!expectSound || scs.size() >= 1) && (notes > 0);
+    return ok;
+  } catch (const std::exception& e) {
+    vr = std::string("reload exception: ") + e.what();
+    return false;
+  } catch (...) {
+    vr = "reload unknown exception";
+    return false;
+  }
+}
+
 bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
                              const std::string& templatePath, std::string& err) {
   try {
@@ -55,6 +86,7 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
     if (!ioReady) {
       Tiio::defineStd();
       initImageIo();
+      initSoundIo();
       ioReady = true;
       dbg("io initialized");
     }
@@ -84,6 +116,12 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       return false;
     }
     dbg("loadLevel ok");
+
+    // 参考层只读锁定（Q8：决定稿后参考层不可编辑）
+    if (auto* simple = dynamic_cast<TXshSimpleLevel*>(level)) {
+      simple->setIsReadOnly(true);
+      dbg(std::string("level readOnly=") + (simple->isReadOnly() ? "yes" : "no"));
+    }
 
     // 3) 时长钉定：参考层从第 1 帧 hold 到第 N 帧 → TXsheet 帧数 = N
     TXsheet* xsh = scene.getXsheet();
@@ -125,8 +163,33 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       }
     }
 
-    // 6) 声音：TODO(P1-runtime) 若 plan.hasSound，按帧对齐加入 TXshSoundColumn。
-    //    （需 TXshSoundLevel + getSoundColumns()，运行时按实际 API 落地。）
+    // 6) 声音：若 plan.hasSound，加入 TXshSoundColumn 并按帧对齐
+    if (plan.hasSound && !plan.soundPath.empty()) {
+      try {
+        TFilePath sp(plan.soundPath);
+        TXshSoundLevel* sl = new TXshSoundLevel(L"SE");
+        sl->setScene(&scene);
+        sl->setPath(sp);
+        sl->setFrameRate(plan.fps);
+        sl->load();
+        scene.getLevelSet()->insertLevel(sl);
+        TXshSoundColumn* sc = new TXshSoundColumn();
+        int col = xsh->getColumnCount();
+        xsh->insertColumn(col, sc);
+        sc->setFrameRate(plan.fps);
+        for (int row = 0; row < N; ++row)
+          sc->setCell(row, TXshCell(TXshLevelP(sl), TFrameId(1)));
+        sc->updateCells(0, N);
+        dbg("sound column added");
+      } catch (...) {
+        dbg("sound load/add failed (ignored)");
+      }
+    }
+    {
+      std::vector<TXshSoundColumn*> scs;
+      scene.getSoundColumns(scs);
+      dbg("sound columns=" + std::to_string(scs.size()));
+    }
 
     // 7) 存盘
     scene.setScenePath(out);
@@ -150,6 +213,20 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       dbg(std::string("final exists: ") + (std::filesystem::exists(outFile) ? "yes" : "no"));
     }
 
+    // 持久化参考层锁定：把参考 PNG 置为只读（OT 重载时据此判定 level 只读）
+    {
+      std::error_code ec;
+      std::filesystem::permissions(
+          plan.levelPath,
+          std::filesystem::perms::owner_read | std::filesystem::perms::group_read |
+              std::filesystem::perms::others_read,
+          std::filesystem::perm_options::replace, ec);
+      auto st = std::filesystem::status(plan.levelPath, ec);
+      bool ro = (st.permissions() & std::filesystem::perms::owner_write) ==
+                std::filesystem::perms::none;
+      dbg(std::string("ref file readOnly=") + (ro ? "yes" : "no"));
+    }
+
     // 8) 回读校验：帧数必须 = N（P1 验收核心）
     int fc = -1;
     try {
@@ -163,6 +240,14 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
     if (fc != N) {
       err = "帧数校验失败: 期望 " + std::to_string(N) + "，实际 " + std::to_string(fc);
       return false;
+    }
+
+    // 9) 可选：真正重载 .tnz 验证（KONTE_VERIFY=1）
+    if (dbgOn()) {
+      std::string vr;
+      bool ok = verifyReload(outFile, N, plan.hasSound, vr);
+      dbg(vr + (ok ? " [OK]" : " [BAD]"));
+      if (!ok) { err = vr; return false; }
     }
     return true;
   } catch (const std::exception& e) {
