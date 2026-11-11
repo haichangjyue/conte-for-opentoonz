@@ -1,5 +1,7 @@
-* text=auto
+﻿* text=auto eol=lf
 *.png binary
 *.jpg binary
 *.tif binary
 *.psd binary
+*.ttf binary
+*.ttc binary
