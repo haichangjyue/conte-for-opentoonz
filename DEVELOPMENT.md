@@ -41,19 +41,18 @@ cd poc; $env:PYTHONPATH = (Get-Location).Path
 | Q1 决定稿闸门 | `model.check_export_gate` / Bridge 422 | ✅ |
 | Q4 A4·5-cut PDF 叠图 | `poc/konte_poc/pdfgen.py` | ✅（P4 通过） |
 | Q8 渲染位图参考层 | `render.render_reference`, ScenePlan `level.lock` | ✅ |
-| §5 导出内核 `.tnz` | `konte-core/`（C++：ScenePlan→.tnz，`KONTE_WITH_OPENTOONZ`） | 🟡 内核代码+dry-run 已通；真实 .tnz 待 OT 构建环境 |
+| §5 导出内核 `.tnz` | `konte-core/`（C++：ScenePlan→.tnz，`KONTE_WITH_OPENTOONZ`） | ✅ 运行验证：7/7 真实 .tnz，帧数回读一致 |
 | §3 Bridge API | `bridge/src/konte_bridge/` | ✅（参考实现） |
 | §5.3 打包 | `export.py` 产物目录（scenes/references/manifest/pdf） | ✅（无 OT 依赖部分） |
 | §8 PoC P1（OT 无头生成 .tnz） | 需 OpenToonz 源码与构建环境 | ⏳ 见下 |
 
 ## 3. 下一步（按 PoC 优先级）
 
-1. **P1｜OT 无头生成 `.tnz`（关键路径）** — 🟡 代码完成，待运行时
-   - ✅ OpenToonz 源码已接入 `toonz/`（浅克隆 submodule）。
-   - ✅ `konte-core/` C++ 内核：`ScenePlan`→`.tnz`（真实 OT API 签名）、CLI `konte-export`、dry-run 打通。
-   - ⏳ 在**已构建 OT（Qt/OpenCV）**的环境执行 `scripts/build_kernel.ps1 -WithOpenToonz ...`，
-     跑真实 `.tnz`；补 `参考层只读锁定` 与 `声音切片`（`TODO(P1-runtime)`）。
-   - 通过标准：`.tnz` 打开正常、帧数=N、参考层锁定、Note/声音正确。
+1. **P1｜OT 无头生成 `.tnz`（关键路径）** — ✅ 运行验证通过
+   - ✅ OpenToonz 源码接入 `toonz/`（浅克隆 submodule）。
+   - ✅ `konte-core/` C++ 内核 + `konte-export`（真实 OT API），Windows 环境构建成功。
+   - ✅ 7/7 cut 生成真实 `.tnz`，`loadFrameCount` 与时长帧数逐一相等；参考层/Note 写入正确。
+   - ⏳ 收尾：参考层只读锁定、声音切片、模板套用、打包改相对路径（`TODO(P1-runtime)`）。
 2. **P4 收尾**：模板多套坐标配置（换 PSD）、字体授权锁定（Noto/Source Han）。
 3. **P2 Bridge 生产化**：内嵌 `QTcpServer/QWebSocketServer` 或加固 sidecar 启动生命周期。
 4. **P5 边界**：不同时长/超框/声音切片批量跑；>200 cut 性能与断点续。

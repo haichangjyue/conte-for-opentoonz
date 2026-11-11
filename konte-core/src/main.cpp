@@ -76,16 +76,26 @@ int main(int argc, char** argv) {
 
   std::cout << "sceneplans: " << plans.size() << " loaded, parseErrors=" << parseErrors
             << ", openToonz=" << (openToonzAvailable() ? "yes" : "no")
-            << ", dryRun=" << (dryRun ? "yes" : "no") << "\n";
+            << ", dryRun=" << (dryRun ? "yes" : "no") << std::endl;
+
+  // 解析 level 相对路径：sceneplan 位于 <out>/scenes/，referenceImage 形如 "scenes/xxx.ref.png"
+  fs::path sceneDirAbs = fs::absolute(sceneDir);
+  fs::path levelBase = sceneDirAbs.parent_path();
+  for (auto& p : plans) {
+    if (!p.levelPath.empty() && fs::path(p.levelPath).is_relative())
+      p.levelPath = (levelBase / p.levelPath).lexically_normal().string();
+  }
 
   ExportOptions opt;
-  opt.outDir = outDir;
+  opt.outDir = fs::absolute(outDir).string();
   opt.templatePath = templatePath;
   opt.dryRun = dryRun;
   opt.overwrite = overwrite;
 
   ExportKernel kernel;
+  std::cout << "running kernel..." << std::endl;
   ExportResult res = kernel.run(plans, opt);
+  std::cout << "kernel returned" << std::endl;
 
   for (auto& s : res.scenes) {
     if (s.ok) std::cout << "  [OK]   " << s.sceneFile << "  (" << s.totalFrames << "f) -> " << s.artifact << "\n";

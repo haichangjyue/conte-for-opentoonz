@@ -20,6 +20,9 @@ __pycache__/
 # bridge runtime artifacts
 .bridge/
 +drawings/
+# generated export artifacts (machine-specific absolute paths)
+poc/examples/*/out/tnz/
+**/sceneIcons/
 # NEVER commit private repo here
 ../konte-studio/
 konte-studio/
