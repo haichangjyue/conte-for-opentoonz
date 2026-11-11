@@ -1,0 +1,3 @@
+[submodule "toonz"]
+	path = toonz
+	url = https://github.com/opentoonz/opentoonz.git
