@@ -1,4 +1,4 @@
-# <PRODUCT NAME> — konte-for-opentoonz
+# NARRATIVISM — konte-for-opentoonz
 
 > 一个**面向日本动画分镜（絵コンテ）的开源工具包**，基于 [OpenToonz](https://opentoonz.github.io/)。<br>
 > An open-core storyboard (e-konte) toolkit based on OpenToonz.
@@ -59,4 +59,4 @@ python -m unittest discover -s tests -v
 - 请为源文件加 SPDX 头：`// SPDX-License-Identifier: BSD-3-Clause`。
 
 ## 联系
-<WEBSITE / EMAIL>
+info@parallaxis.com.cn
