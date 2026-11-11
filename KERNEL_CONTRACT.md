@@ -62,3 +62,14 @@ writeManifest(...);   // 与 PoC manifest 结构一致
 2. C++ 内核产出：`<SCENE>_<CUT>.tnz`，打开后应满足：帧数 == `sceneplan.duration.totalFrames`；
    参考层显示正确并锁定；Note 含 action/台词/music-se；声音对齐。
 3. CI 断言：两者 `manifest.items[]` 的 `cutId/sceneFile/totalFrames/durationSec/page` 完全一致。
+
+## 4. 实现状态（P1 / C++ 导出内核）
+
+- **已实现**（`konte-core/`）：零依赖 JSON、`ScenePlan` 解析与校验、导出编排、CLI `konte-export`、
+  以及基于真实 OT 头文件签名的 `ot_scene_writer.cpp`（`KONTE_WITH_OPENTOONZ` 宏开关）。
+- **已验证（本环境，无 OT）**：C++ 内核编译通过、C++ 单测通过；`konte-export --dry-run`
+  成功读取 Python `poc` 产出的 7 份 `*.sceneplan.json` 并输出计划 + 报告（跨语言对拍 OK）。
+- **待运行时落地**（需 OT 构建环境 + Qt/OpenCV）：`参考层只读锁定`、`TXshSoundColumn 声音切片`、
+  模板 `.tnz` 套用细节；代码中以 `TODO(P1-runtime)` 标注。
+- **构建**：`pwsh -File scripts/build_kernel.ps1`（纯逻辑）；加 `-WithOpenToonz -OtIncludeDirs ... -OtLibs ...` 生成真实 `.tnz`。
+

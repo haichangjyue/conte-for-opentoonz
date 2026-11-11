@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: BSD-3-Clause
+﻿# SPDX-License-Identifier: BSD-3-Clause
 # Konte PoC 一键演示：生成示例项目 → 导出（A4 PDF + 参考图 + ScenePlan + manifest）→ 页面预览
 # 用法：pwsh -File scripts/run_demo.ps1 [-BasePsd <路径>] [-Out <目录>]
 
