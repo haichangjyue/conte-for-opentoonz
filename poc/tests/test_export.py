@@ -20,7 +20,7 @@ class TestExport(unittest.TestCase):
         cls.tmp = Path(tempfile.mkdtemp(prefix="konte_ep01_"))
         cls.proj_path = make_demo.make(cls.tmp / "EP01")
         cls.out = cls.tmp / "out"
-        cls.report = export_project(cls.proj_path, cls.out, base_psd=None)
+        cls.report = export_project(cls.proj_path, cls.out, base_psd="")
 
     def test_report(self):
         self.assertEqual(self.report["cutCount"], 7)
@@ -35,7 +35,11 @@ class TestExport(unittest.TestCase):
     def test_sceneplans(self):
         plans = list((self.out / "scenes").glob("*.sceneplan.json"))
         self.assertEqual(len(plans), 7)
-        data = json.loads((self.out / "scenes" / "EP01_C001.sceneplan.json").read_text(encoding="utf-8"))
+        # 导出文件名规则：[项目名称]_[镜头号3位].tnz → EP01_001
+        sp = self.out / "scenes" / "EP01_001.sceneplan.json"
+        self.assertTrue(sp.exists(), "应使用 EP01_001 命名")
+        data = json.loads(sp.read_text(encoding="utf-8"))
+        self.assertEqual(data["sceneFile"], "EP01_001.tnz")
         self.assertEqual(data["duration"]["totalFrames"], 72)
         self.assertEqual(data["holdFrames"], {"from": 1, "to": 72})
         self.assertTrue(data["level"]["lock"])
@@ -58,7 +62,7 @@ class TestExport(unittest.TestCase):
         p = self.tmp / "EP01_draft.json"
         p.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
         with self.assertRaises(ExportGateError):
-            export_project(p, self.tmp / "out_draft", base_psd=None)
+            export_project(p, self.tmp / "out_draft", base_psd="")
 
 
 if __name__ == "__main__":

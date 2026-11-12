@@ -86,12 +86,16 @@ int main(int argc, char** argv) {
             << ", openToonz=" << (openToonzAvailable() ? "yes" : "no")
             << ", dryRun=" << (dryRun ? "yes" : "no") << std::endl;
 
-  // 解析 level 相对路径：sceneplan 位于 <out>/scenes/，referenceImage 形如 "scenes/xxx.ref.png"
+  // 解析 level / 多帧参考图的相对路径：sceneplan 位于 <out>/scenes/，路径形如 "scenes/xxx.ref.png"
   fs::path sceneDirAbs = fs::absolute(sceneDir);
   fs::path levelBase = sceneDirAbs.parent_path();
   for (auto& p : plans) {
     if (!p.levelPath.empty() && fs::path(p.levelPath).is_relative())
       p.levelPath = (levelBase / p.levelPath).lexically_normal().string();
+    for (auto& r : p.referenceImages) {
+      if (!r.empty() && fs::path(r).is_relative())
+        r = (levelBase / r).lexically_normal().string();
+    }
   }
 
   ExportOptions opt;

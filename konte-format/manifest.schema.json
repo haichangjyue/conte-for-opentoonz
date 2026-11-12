@@ -25,12 +25,16 @@
           "referenceImage": { "type": "string" },
           "totalFrames": { "type": "integer", "minimum": 1 },
           "durationSec": { "type": "number" },
-          "page": { "type": "integer" }
+          "page": { "type": "integer" },
+          "hasAudio": { "type": "boolean" },
+          "audioFile": { "type": ["string", "null"] },
+          "audioDurationSec": { "type": ["number", "null"] }
         }
       }
     },
     "sequences": { "type": "array", "items": { "type": "object" } },
-    "pdf": { "type": "string" },
-    "packageDir": { "type": "string" }
+    "pdf": { "type": ["string", "null"] },
+    "packageDir": { "type": ["string", "null"] },
+    "includeAudio": { "type": ["boolean", "null"] }
   }
 }

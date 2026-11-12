@@ -48,8 +48,9 @@ struct ScenePlan {
   std::string sceneFile;
   int fps = 24;
   Duration duration;
-  std::string referenceImage;   // 相对导出目录
-  std::string levelPath;        // 相对导出目录
+  std::string referenceImage;   // 相对导出目录（第一张参考图）
+  std::vector<std::string> referenceImages;  // 多帧参考层：该 cut 的全部参考图（1..M 帧）
+  std::string levelPath;        // 相对导出目录（参考层逻辑基名，如 scenes/X.ref.png）
   bool levelLock = true;
   HoldFrames hold;
   NoteColumns notes;
@@ -57,6 +58,7 @@ struct ScenePlan {
   std::string cameraNote;
   bool hasSound = false;
   std::string soundPath;
+  int soundOffsetFrames = 0;   // 声音起点相对该 cut 第 1 帧的偏移（>=0）
   std::string sequenceId;
 
   // 从 sceneplan JSON 解析；失败抛 JsonError/PlanError

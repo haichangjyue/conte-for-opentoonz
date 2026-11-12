@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: BSD-3-Clause
+﻿# SPDX-License-Identifier: BSD-3-Clause
 # 用已安装的 OpenToonz 构建环境编译 konte-export（KONTE_WITH_OPENTOONZ），并生成真实 .tnz。
 # 前置：Qt5.15 / OpenCV / Boost / MSVC 就绪（见 docs/BUILD_ENV_WINDOWS.md）。
 param(
@@ -16,12 +16,22 @@ if (-not $BoostRoot) { $BoostRoot = "$repo\toonz\thirdparty\boost\boost_1_73_0" 
 if (-not $ScenePlans) { $ScenePlans = "$repo\poc\examples\EP01\out\scenes" }
 if (-not $OutDir) { $OutDir = "$repo\poc\examples\EP01\out\tnz" }
 
-# 1) 幂等注入"konte 导出内核"集成钩子到 OT sources CMakeLists（不改上游逻辑）
+# 1) 注入"konte 导出内核"集成钩子到 OT sources CMakeLists（优先用可提交 patch，失败回退追加）
 $cm = "$repo\toonz\toonz\sources\CMakeLists.txt"
+$patchFile = "$repo\patches\opentoonz-konte-hook.patch"
 $enc = New-Object System.Text.UTF8Encoding($false)
 $t = [IO.File]::ReadAllText($cm, [Text.Encoding]::UTF8)
 if ($t -notmatch 'KONTE_BUILD_EXPORT_KERNEL') {
-  $block = @'
+  $applied = $false
+  if ((Test-Path $patchFile) -and (Get-Command git -ErrorAction SilentlyContinue)) {
+    Push-Location "$repo\toonz"
+    try {
+      git apply --whitespace=nowarn $patchFile
+      if ($LASTEXITCODE -eq 0) { $applied = $true; Write-Host "[hook] applied patch: $patchFile" }
+    } finally { Pop-Location }
+  }
+  if (-not $applied) {
+    $block = @'
 
 # ===== konte-core export kernel (Repo1 P1 integration) =====
 option(KONTE_BUILD_EXPORT_KERNEL "Build konte-core export kernel (konte-export)" OFF)
@@ -30,8 +40,9 @@ if(KONTE_BUILD_EXPORT_KERNEL)
   add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../../konte-core" "${CMAKE_BINARY_DIR}/konte-core")
 endif()
 '@
-  [IO.File]::WriteAllText($cm, $t + $block, $enc)
-  Write-Host "[hook] appended konte integration block"
+    [IO.File]::WriteAllText($cm, $t.TrimEnd() + "`n" + $block, $enc)
+    Write-Host "[hook] appended konte integration block (fallback)"
+  }
 }
 
 # 2) 配置（VS2022 x64）

@@ -20,7 +20,7 @@ class TestPackage(unittest.TestCase):
         cls.proj = make_demo.make(cls.tmp / "EP01")
         cls.root = cls.tmp / "deliverables"
         # 不提供 exporter：验证结构包（无 .tnz，但有 PDF/manifest/references/zip）
-        cls.report = build_package(cls.proj, cls.root, base_psd=None, exporter=None)
+        cls.report = build_package(cls.proj, cls.root, base_psd="", exporter=None)
 
     def test_structure(self):
         pkg = self.root / "EP01"
@@ -48,6 +48,27 @@ class TestPackage(unittest.TestCase):
         z = Path(self.report["zip"])
         self.assertTrue(z.exists())
         self.assertGreater(z.stat().st_size, 10000)
+
+    def test_audio_included_default(self):
+        pkg = self.root / "EP01"
+        man = json.loads((pkg / "manifest.json").read_text(encoding="utf-8"))
+        self.assertTrue(man.get("includeAudio"))
+        self.assertEqual(len(list((pkg / "scenes").glob("*.wav"))), 7)
+        self.assertTrue(all(it.get("hasAudio") for it in man["items"]))
+
+    def test_no_audio_and_zip_name(self):
+        root2 = self.tmp / "deliverables2"
+        rep = build_package(self.proj, root2, base_psd="", exporter=None,
+                            include_audio=False, zip_name="EP01_v1.2")
+        pkg = root2 / "EP01"
+        man = json.loads((pkg / "manifest.json").read_text(encoding="utf-8"))
+        self.assertFalse(man.get("includeAudio"))
+        self.assertEqual(list((pkg / "scenes").glob("*.wav")), [])
+        self.assertFalse(any(it.get("hasAudio") for it in man["items"]))
+        self.assertEqual(rep["audioCount"], 0)
+        self.assertEqual(rep["zipName"], "EP01_v1.2.zip")
+        self.assertTrue(Path(rep["zip"]).exists())
+        self.assertTrue(rep["verify"]["ok"], rep["verify"])
 
 
 if __name__ == "__main__":

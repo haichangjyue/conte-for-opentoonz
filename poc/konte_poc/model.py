@@ -122,15 +122,20 @@ class KonteProject:
             raise ExportGateError("决定稿闸门未通过：不得导出", details)
 
     # ---------- 画面寻址 ----------
+    def resolve_drawing(self, cut: dict, drawing: dict) -> Path:
+        p = Path(drawing["level"])
+        return p if p.is_absolute() else (self.base_dir / p)
+
     def resolve_level(self, cut: dict) -> Path:
         if not cut.get("drawings"):
             raise InvariantError(f"cut {cut['id']} 没有画面")
-        level = cut["drawings"][0]["level"]
-        p = Path(level)
-        return p if p.is_absolute() else (self.base_dir / p)
+        return self.resolve_drawing(cut, cut["drawings"][0])
 
     # ---------- 分页（每页 5 cut） ----------
     def page_of(self, cut: dict, per_page: int = 5) -> int:
+        layout = cut.get("layout") or {}
+        if layout.get("page"):
+            return int(layout["page"])
         if "page" in cut and cut["page"]:
             return int(cut["page"])
         idx = self.sorted_cuts().index(cut)

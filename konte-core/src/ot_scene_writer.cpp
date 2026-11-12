@@ -237,27 +237,36 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       }
     }
 
-    // 2) 参考层：复制到场景目录，并以「带帧号」的文件名载入（否则 level 帧号为 NO_FRAME，与单元格不匹配 → 空白）
+    // 2) 参考层：支持「多帧参考层」——一个 cut 的多张画面写成同一 level 的 1..M 帧
     std::filesystem::path outP(outFile);
     std::filesystem::path sceneDir = outP.parent_path();
-    std::filesystem::path refAbs(plan.levelPath);
-    std::string baseName = refAbs.stem().string();      // e.g. "EP01_C001.ref"
-    std::string levelLoadName = baseName + ".0001.png"; // e.g. "EP01_C001.ref.0001.png"
-    std::filesystem::path refLocal = sceneDir / levelLoadName;
-    if (!refAbs.empty() && refAbs != refLocal) {
+    std::vector<std::string> refs = plan.referenceImages;
+    if (refs.empty() && !plan.levelPath.empty()) refs.push_back(plan.levelPath);
+    if (refs.empty() && !plan.referenceImage.empty()) refs.push_back(plan.referenceImage);
+    if (refs.empty()) { err = "缺少参考图"; return false; }
+    // 逻辑基名来自 levelPath（如 "EP01_C001.ref"）；实际源文件可多张
+    std::filesystem::path baseSrc(plan.levelPath.empty() ? refs[0] : plan.levelPath);
+    std::string baseName = baseSrc.stem().string();
+    std::vector<TFrameId> fids;
+    for (size_t i = 0; i < refs.size(); ++i) {
+      char num[16];
+      std::snprintf(num, sizeof(num), "%04zu", i + 1);
+      std::string frameName = baseName + "." + num + ".png";
+      std::filesystem::path refLocal = sceneDir / frameName;
       std::error_code ec;
       std::filesystem::permissions(refLocal,
           std::filesystem::perms::owner_all, std::filesystem::perm_options::add, ec);
-      std::filesystem::copy_file(refAbs, refLocal,
-          std::filesystem::copy_options::overwrite_existing, ec);
-      dbg(std::string("ref copied into scene dir, ec=") + std::to_string(ec.value()));
+      std::filesystem::path src(refs[i]);
+      if (!src.empty() && src != refLocal) {
+        std::filesystem::copy_file(src, refLocal,
+            std::filesystem::copy_options::overwrite_existing, ec);
+      }
+      fids.push_back(TFrameId(int(i + 1)));
     }
-    dbg("loadLevel(relative): " + levelLoadName);
-    std::vector<TFrameId> fids;
-    fids.push_back(TFrameId(1));  // 单张位图作为第 1 帧
-    TXshLevel* level = scene.loadLevel(TFilePath(levelLoadName), nullptr, L"", fids);
+    dbg("ref frames=" + std::to_string(refs.size()) + " load=" + baseName + ".0001.png");
+    TXshLevel* level = scene.loadLevel(TFilePath(baseName + ".0001.png"), nullptr, L"", fids);
     if (!level) {
-      err = "loadLevel 失败: " + levelLoadName;
+      err = "loadLevel 失败: " + baseName + ".0001.png";
       return false;
     }
     dbg("loadLevel ok");
@@ -270,19 +279,24 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       dbg(std::string("level readOnly=") + (simple->isReadOnly() ? "yes" : "no"));
     }
 
-    // 3) 时长钉定：参考层从第 1 帧 hold 到第 N 帧 → TXsheet 帧数 = N
+    // 3) 时长钉定：参考层铺满 1..N 帧；多帧时按画面数量均匀分布（可在 OT 中翻看各格画面）
     TXsheet* xsh = scene.getXsheet();
     if (!xsh) { err = "getXsheet() 为空"; return false; }
 
     const int N = plan.duration.totalFrames;
+    const int M = int(fids.size());
 
     // 参考层作为新列追加（模板图层全部保留，位于其左侧/下方）
     TXshLevelP levelP(level);
     const int refCol = xsh->getColumnCount();
     xsh->insertColumn(refCol);
-    const TFrameId fid(1);
     for (int row = 0; row < N; ++row) {
-      xsh->setCell(row, refCol, TXshCell(levelP, fid));
+      int idx = 0;
+      if (M > 1) {
+        idx = int((long long)row * M / (N > 0 ? N : 1));
+        if (idx >= M) idx = M - 1;
+      }
+      xsh->setCell(row, refCol, TXshCell(levelP, TFrameId(idx + 1)));
     }
     xsh->updateFrameCount();
 
@@ -361,8 +375,14 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
         temp.setXsheet(xsh);
         temp.setFrameRate(plan.fps);
         int sndFrames = sl->getFrameCount();
+        int off = plan.soundOffsetFrames;
+        if (off < 0) off = 0;
+        if (N > 0 && off > N - 1) off = N - 1;   // 偏移超出本 cut 则贴到末帧
+        dbg("sound offset frames=" + std::to_string(off));
         for (int row = 0; row < N; ++row) {
-          int fid = (sndFrames > 0) ? (row < sndFrames ? row : sndFrames - 1) : 0;
+          int rel = row - off;
+          if (rel < 0) continue;                 // 起点前留空（静音）
+          int fid = (sndFrames > 0) ? (rel < sndFrames ? rel : sndFrames - 1) : 0;
           temp.setCell(row, TXshCell(TXshLevelP(sl), TFrameId(fid)));
         }
 
@@ -404,21 +424,27 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       dbg(std::string("final exists: ") + (std::filesystem::exists(outFile) ? "yes" : "no"));
     }
 
-    // 持久化参考层锁定：把参考 PNG 置为只读（OT 重载时据此判定 level 只读）
+    // 持久化参考层锁定：把参考 PNG（可能多帧）全部置为只读
     {
       std::error_code ec;
-      std::filesystem::permissions(
-          refLocal,
-          std::filesystem::perms::owner_read | std::filesystem::perms::group_read |
-              std::filesystem::perms::others_read,
-          std::filesystem::perm_options::replace, ec);
-      auto st = std::filesystem::status(refLocal, ec);
+      for (size_t i = 0; i < refs.size(); ++i) {
+        char num[16];
+        std::snprintf(num, sizeof(num), "%04zu", i + 1);
+        std::filesystem::path refLocal = sceneDir / (baseName + "." + num + ".png");
+        std::filesystem::permissions(
+            refLocal,
+            std::filesystem::perms::owner_read | std::filesystem::perms::group_read |
+                std::filesystem::perms::others_read,
+            std::filesystem::perm_options::replace, ec);
+      }
+      auto st = std::filesystem::status(sceneDir / (baseName + ".0001.png"), ec);
       bool ro = (st.permissions() & std::filesystem::perms::owner_write) ==
                 std::filesystem::perms::none;
-      dbg(std::string("ref file readOnly=") + (ro ? "yes" : "no"));
+      dbg(std::string("ref frames=") + std::to_string(refs.size()) + " readOnly=" + (ro ? "yes" : "no"));
     }
 
     // 关键：把 level 路径写成 $scenefolder/<name>，否则重载时解析为 0 帧空层
+    std::string levelLoadName = baseName + ".0001.png";
     if (rewriteToScenefolder(outFile, levelLoadName))
       dbg("level path -> $scenefolder/" + levelLoadName);
     if (!soundLocalName.empty() && rewriteToScenefolder(outFile, soundLocalName))

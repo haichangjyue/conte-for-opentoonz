@@ -35,6 +35,7 @@
         "status": { "enum": ["draft", "final"], "description": "final = 决定稿已锁定，方可导出" },
         "fps": { "type": "integer", "minimum": 1 },
         "template": { "type": "string", "description": "模板 .tnz 路径或名" },
+        "pdfTemplate": { "type": "string", "description": "PDF 版式模板 id 或路径（可选；默认 scfilms_storyboard）" },
         "frame": {
           "type": "object",
           "additionalProperties": false,
@@ -113,6 +114,17 @@
         "bleedNote": { "type": "string" }
       }
     },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page", "rowStart", "rowSpan"],
+      "description": "真实分镜允许一个镜头跨多个格子：page+rowStart(0基)+rowSpan；drawings 按行依次放置",
+      "properties": {
+        "page": { "type": "integer", "minimum": 1 },
+        "rowStart": { "type": "integer", "minimum": 0 },
+        "rowSpan": { "type": "integer", "minimum": 1 }
+      }
+    },
     "dialogueLine": {
       "type": "object",
       "additionalProperties": false,
@@ -176,6 +188,7 @@
         "cut": { "type": "string" },
         "number": { "type": "integer", "minimum": 1 },
         "page": { "type": "integer", "minimum": 1 },
+        "layout": { "$ref": "#/$defs/layout" },
         "order": { "type": "integer", "minimum": 0 },
         "duration": { "$ref": "#/$defs/duration" },
         "frame": { "$ref": "#/$defs/frame" },
@@ -188,7 +201,8 @@
           "additionalProperties": false,
           "required": ["path"],
           "properties": {
-            "path": { "type": "string", "description": "音频文件路径（wav），相对项目或绝对" }
+            "path": { "type": "string", "description": "音频文件路径（wav），相对项目或绝对" },
+            "offsetFrames": { "type": "integer", "minimum": 0, "description": "声音相对该 cut 第 1 帧的起点偏移（帧）" }
           }
         },
         "camera": { "$ref": "#/$defs/camera" },

@@ -20,6 +20,7 @@ def build_manifest(
     pdf: str | None = None,
     package_dir: str | None = None,
     generated_at: str | None = None,
+    include_audio: bool | None = None,
 ) -> dict:
     return {
         "projectId": project_id,
@@ -30,4 +31,5 @@ def build_manifest(
         "sequences": sequences or [],
         "pdf": pdf,
         "packageDir": package_dir,
+        "includeAudio": include_audio,
     }

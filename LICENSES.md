@@ -39,13 +39,38 @@
 |---|---|---|
 | nlohmann/json | konte.json 读写 | MIT |
 | Bridge sidecar 运行时（Node/Python） | 本地服务 | MIT/PSF 等（按运行时） |
-| PDF 生成库 | A4 叠图 | 按选型（如 reportlab BSD / pdf-lib MIT） |
-| **CJK 字体**（内置） | 分镜 PDF 文字 | **需可商用授权**：建议 Noto Sans CJK / Source Han Sans（SIL OFL）——发布前锁定并附 OFL |
+| PDF 生成库 | A4 叠图 | Pillow（HPND/MIT-CMU 类，见下） |
+| **CJK 字体（内置）** | 分镜 PDF 文字 | **SIL OFL 1.1（已锁定，见 §5）** |
 
 ## 4. 待办
 - [ ] 生成 `thirdparty/` 全量许可证清单（脚本扫描 + 人工核对）。
-- [ ] 确认 CJK 字体选型与授权，随包附许可证。
+- [x] 确认 CJK 字体选型与授权，随包附许可证（→ §5，2026-11）。
 - [ ] Qt 链接方式（动态/静态）合规确认。
 - [ ] 在安装包/关于页附总 `NOTICE`/`LICENSES.txt`。
 
-> 结论：核心 **BSD-3 允许闭源商用**；风险点集中在 `thirdparty/`、字体、Qt 链接方式——发布前按上表审计即可。
+## 5. CJK 字体授权（P4，已锁定）
+
+分镜 PDF 的动态文字（CUT / ACTION / DIALOGE / MUSIC·SE / Dur. / No.）使用可商用字体：
+
+| 字体族 | 许可证 | 文件（发布随包） | 说明 |
+|---|---|---|---|
+| **Source Han Sans（思源黑体，默认）** | **SIL OFL 1.1** | `SourceHanSans.ttc` | 简体中文+假名+汉字全覆盖，中日混排默认 |
+| **Noto Sans SC** | **SIL OFL 1.1** | `NotoSansSC-VF.ttf` | 简体中文+假名+汉字（可变字体，备用） |
+| **Noto Sans JP** | **SIL OFL 1.1** | `NotoSansJP-VF.ttf` / `NotoSansJP-Bold.otf` | 日文假名+汉字（日文纹样更地道） |
+
+- **许可证全文**：`konte-format/fonts/OFL-1.1.txt`（SIL Open Font License 1.1）。
+- **字体清单/映射**：`konte-format/fonts/fonts.json`；说明：`konte-format/fonts/README.md`。
+- **允许**：免费商用、随软件打包/嵌入、修改与再分发。
+- **义务**：① 随包附带 OFL 全文与版权声明；② 修改后不得使用 Reserved Font Name
+  （“Noto”/“Source Han”）；未修改直接打包不受此限；③ 不得单独售卖字体。
+- **运行时解析**：`konte_poc/textfit.py`（环境变量 `KONTE_FONT` → 模板 `fonts.*.family` →
+  仓库 `konte-format/fonts/` → 系统字体 → PIL 默认）。开发机无需把大字体文件提交 git，
+  发布打包时复制进 `konte-format/fonts/`。
+
+## 6. 其他 PDF 依赖
+- **Pillow（PIL）**：A4 叠图与 PDF 落盘。许可证为 **HPND / MIT-CMU 类**（Pillow 项目自述），
+  允许商用与再分发；发布时按 Pillow 的 `LICENSE` 附版权声明。
+- 字体子集化/嵌入由 Pillow 处理；OFL 不限制“用字体生成的文档”的授权（见 OFL 正文）。
+
+> 结论：核心 **BSD-3 允许闭源商用**；风险点集中在 `thirdparty/`、Qt 链接方式——发布前按上表审计即可。
+> 字体风险已通过锁定 **SIL OFL 1.1（Noto/Source Han）** 解除。

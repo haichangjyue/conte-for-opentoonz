@@ -13,9 +13,9 @@
 | `sceneFile` | 目标 `.tnz` 文件名 | `scene.setScenePath(target/sceneFile)` |
 | `fps` | 帧率（模板锁定，日式多 24） | `TProject::SceneProperties` / `initializeScene` |
 | `duration.totalFrames` = N | 场景帧数（= 秒×fps+帧） | 参考层 hold 到第 N 帧 → `TXsheet` 帧数 = N |
-| `referenceImage` / `level.path` | 渲染参考图（Raster） | `scene.loadLevel(refPng)` |
+| `referenceImage` / `referenceImages` / `level.path` | 渲染参考图（Raster）；`referenceImages` 为同一 cut 的 1..M 张画面（多帧参考层） | `scene.loadLevel(base.0001.png, fids=[1..M])` |
 | `level.lock` | 参考层锁定不可编辑 | level 只读/锁 |
-| `holdFrames {from:1,to:N}` | 参考层暴露区间 | `TXsheet::setCell` / `exposeLevel` 第 1..N 帧 |
+| `holdFrames {from:1,to:N}` | 参考层暴露区间 | `TXsheet::setCell` 第 1..N 帧；多帧时按画面数均匀分布 |
 | `noteColumns.action/dialogue/musicSe` | 文字进 Note 列 | `TXsheet::getNotes()` 写文本轨 |
 | `frame.kind` / `frame.rect` | `oversize`=超框(bleed) | 参考图按 rect 渲染（保留外溢），相机按模板 |
 | `camera` / `sequenceId` / `sound` | 参考信息 | 相机参考层 / 目录分组 / 声音列 |
@@ -78,6 +78,8 @@ writeManifest(...);   // 与 PoC manifest 结构一致
 - **模板与打包（2026-11-12 收尾）**：`--template` 以模板 `.tnz` 为底，**保留模板全部图层（columns）**、仅清空模板 notes；
   模板层超长裁到 N、单帧静态层 hold 到 N；本 cut 参考层作为**新列**追加。实测模板相机 1280×720 生效、每 cut 输出两列（模板层+参考层）。
 - **参考层命名（关键）**：参考图导出为 `<stem>.0001.png`，`.tnz` 内以 **`$scenefolder/<stem>.0001.png`** 记录。文件名**必须带帧号**：否则 OT 解析为 `NO_FRAME(-2)`，与单元格 `0001` 不匹配 → 空白层（Xsheet 有列但无画面）。
+- **多帧参考层（一个工程多格画面）**：一个 cut 的多张画面写成**同一 level 的 1..M 帧**（源文件 `<stem>.ref.01.png...`，内核复制为 `<stem>.ref.0001.png...`），
+  `loadLevel(base.0001.png, fids=[1..M])`；Xsheet 里按画面数均匀铺到该 cut 的 N 帧，可在 OT 中翻看。**仍是一个 cut 一个 `.tnz`**。
 - **配置隔离（关键）**：导出进程启动时调用 `configureIsolatedEnv()`（内部 `TEnv::setArgPathValue` 覆盖 `TOONZPROFILES/CONFIG/PROJECTS/...` 到临时目录）。Windows 下 `TEnv` 只读注册表、不读环境变量；不隔离会改写用户 OpenToonz 的 `preferences.ini`（实测会把界面语言重置为 English）。
 - **音频**：`cut.audio.path`（konte.schema 可选字段）经 ScenePlan 的 `sound.path` 传入；内核把 WAV 复制到场景目录并建立**单个连续 `ColumnLevel`（0..N-1）** 的 `TXshSoundColumn`。注意：若用多个重叠 `SoundCells`，OT 在关闭时可能因声音列定时器/播放器状态异常而崩溃（EXCEPTION_ACCESS_VIOLATION in `TSoundOutputDevice::isPlaying`）；因此必须保持单一完整音轨。**演示工程 EP01 已带音轨**（`audio/C001..C007.wav`）。
 - **构建**：`pwsh -File scripts/build_kernel.ps1`（纯逻辑）；`pwsh -File scripts/build_export_with_ot.ps1`（真实 .tnz）。

@@ -42,10 +42,24 @@
 - **`ToonzScene::save` 仅留下 `<file>.tmp`** 未完成 replace（本环境实测）→ 内核在保存后检测并完成 `.tmp → .tnz` 改名兜底。
 - **参考层路径（已解决）**：`.tnz` 内记录 **`$scenefolder/<stem>.0001.png`**（参考图存为带帧号的 `.0001.png`）。裸相对名或**无帧号文件名**会导致 OT 重载时 level 帧号为 `NO_FRAME(-2)`、与单元格 `0001` 不匹配 → 空白层。
 - **绝不要污染用户 OT 配置**：导出进程需在**进程内**用 `TEnv::setArgPathValue("TOONZPROFILES"/"TOONZCONFIG"/..., <临时目录>)` 覆盖路径（Windows 下 TEnv 只读注册表、不读环境变量）。否则运行导出会改写用户 `profiles/.../preferences.ini`，实测会把界面语言重置为 English。`konte-export` 已内置该隔离；`package.py` 也会传入隔离环境。
-- **音频**：`cut.audio.path` → ScenePlan.sound → `TXshSoundLevel`+`TXshSoundColumn`；声音列必须建成**单个连续 ColumnLevel（0..N-1）**。多个重叠 `SoundCells` 会触发 OT 关闭时 `TSoundOutputDevice::isPlaying` 访问崩溃。演示工程 EP01 已为每个 cut 附带 `audio/*.wav`。
+- **音频**：`cut.audio.path` → ScenePlan.sound → `TXshSoundLevel`+`TXshSoundColumn`；声音列必须建成**单个连续 ColumnLevel（0..N-1）**。多个重叠 `SoundCells` 会触发 OT 关闭时 `TSoundOutputDevice::isPlaying` 访问崩溃。演示工程 EP01 已为每个 cut 附带 `audio/*.wav`。**`cut.audio.offsetFrames`** 会让声音列从该偏移帧开始（起点前留空），实测 `.tnz` SoundCells 起点由 0 变为 12。
 - **模板**：`--template` 以模板 `.tnz` 为底，**保留模板全部图层（columns）**，仅清空模板 notes；模板层超长裁到 N、单帧静态层 hold 到 N；本 cut 参考层作为新列追加。实测模板 1280×720 生效、每 cut 两列。模板文件须为无 BOM、OT 可解析的 `.tnz`。
 - **参考层只读**：导出后把参考 PNG 置为只读；OT 重载时据此判定 level 只读（`.tnz` 本身不序列化该标志）。
 - **QtScript 源码构建需要 perl**：用 Git 自带 perl。
+
+## 集成钩子（可提交 patch）
+
+OT `toonz/sources/CMakeLists.txt` 末尾需要一个**可选**的 konte 导出内核子目录钩子（默认 OFF）：
+
+```powershell
+cd repos\konte-for-opentoonz\toonz
+git apply ..\patches\opentoonz-konte-hook.patch     # 应用（可 -R 回滚）
+```
+
+- patch 见 [`patches/opentoonz-konte-hook.patch`](../patches/opentoonz-konte-hook.patch)：
+  仅在 `-DKONTE_BUILD_EXPORT_KERNEL=ON` 时 `add_subdirectory(../../../konte-core)`，不改上游逻辑。
+- `scripts/build_export_with_ot.ps1` 已改为**优先应用该 patch**（失败回退到幂等字符串追加）。
+- 应用后主仓 `git status` 显示 submodule `toonz` dirty 属预期；commit 基线为 upstream `a250456…`。
 
 ## 一键脚本
 

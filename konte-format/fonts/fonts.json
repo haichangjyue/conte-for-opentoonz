@@ -1,0 +1,35 @@
+{
+  "defaultFamily": "Source Han Sans",
+  "families": [
+    {
+      "family": "Source Han Sans",
+      "license": "SIL OFL 1.1",
+      "licenseFile": "OFL-1.1.txt",
+      "regular": ["SourceHanSans.ttc"],
+      "bold": ["SourceHanSans.ttc"],
+      "regularIndex": 27,
+      "boldIndex": 37,
+      "note": "SC Regular=index27 / SC Bold=index37（ttc 多字面）",
+      "source": "https://github.com/adobe-fonts/source-han-sans",
+      "reservedFontName": "Source Han"
+    },
+    {
+      "family": "Noto Sans SC",
+      "license": "SIL OFL 1.1",
+      "licenseFile": "OFL-1.1.txt",
+      "regular": ["NotoSansSC-VF.ttf", "NotoSansSC-Regular.otf"],
+      "bold": ["NotoSansSC-Bold.otf", "NotoSansSC-VF.ttf"],
+      "source": "https://github.com/notofonts/noto-cjk",
+      "reservedFontName": "Noto"
+    },
+    {
+      "family": "Noto Sans JP",
+      "license": "SIL OFL 1.1",
+      "licenseFile": "OFL-1.1.txt",
+      "regular": ["NotoSansJP-VF.ttf", "NotoSansJP-Regular.otf"],
+      "bold": ["NotoSansJP-Bold.otf", "NotoSansJP-VF.ttf"],
+      "source": "https://github.com/notofonts/noto-cjk",
+      "reservedFontName": "Noto"
+    }
+  ]
+}

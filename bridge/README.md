@@ -20,7 +20,8 @@ python -m konte_bridge --project ..\poc\examples\EP01\konte.json `
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |---|---|---|---|
-| POST | `/api/pair` | 否 | PIN → token |
+| GET | `/api/health` | 否 | 健康/存活（uptime、tokens、jobs、clients） |
+| POST | `/api/pair` | 否 | PIN → token（含 `expiresIn`；失败过多 429） |
 | GET | `/api/project` | 是 | 项目元信息（画幅/bleed/DPI/fps） |
 | GET | `/api/cuts` | 是 | cut 摘要列表 |
 | GET/PUT | `/api/cuts/{cutId}` | 是 | 读/改元数据（revision 乐观锁，冲突 409） |
@@ -31,11 +32,21 @@ python -m konte_bridge --project ..\poc\examples\EP01\konte.json `
 | GET | `/api/export/{jobId}` | 是 | 任务状态/进度/产物 |
 | WS | `/ws` | — | 事件：`cutUpdated`/`thumbnailReady`/`exportProgress`/`takeover` |
 
-## 安全
+## 安全 / 生产化
 
-- 仅监听 `127.0.0.1`/LAN；`Bearer token` 绑定会话。
-- 上传限 10MB；图片用 Pillow 校验。
-- cut 级锁（默认 TTL 120s）+ `revision` 乐观锁，避免同一项目双开会话互相覆盖。
+- 仅监听 `127.0.0.1`/LAN；`Bearer token` 绑定会话，**默认 12h 过期**（`--token-ttl`，过期返回 401 `TOKEN_EXPIRED`）。
+- 上传**单次限 10MB**（`--max-upload-mb`），并按设备**限速**（默认 60 次/分钟，`--max-uploads-per-min`，超限 429 `RATE_LIMITED`）；图片用 Pillow 校验。
+- **PIN 暴力尝试限制**：同一客户端 60s 内失败 5 次即 429 `PAIR_LOCKED`（可配）。
+- cut 级锁（默认 TTL 120s，可按请求 `{"ttl": N}` 覆盖；过期自动视为未锁）+ `revision` 乐观锁。
+- **导出任务保留**：默认 1h / 上限 50（`--job-ttl`/`--max-jobs`），自动清理。
+- `/api/health` 供桌面 sidecar 生命周期/看门狗探活（零鉴权）。
+- 响应带 `Cache-Control: no-store`。
+
+## Qt 原生内嵌实现（生产化原型）
+
+另见 [`../bridge-qt/`](../bridge-qt/README.md)：`konte-bridge-qt`（C++17 + Qt5 Core/Network，QTcpServer）
+把同一套 HTTP/WS 服务内嵌进 Qt 事件循环，桌面端可直接托管、无需 Python sidecar；覆盖 health/pair/
+project/cuts/update/lock/drawing(图片上传)/thumbnail/export/WS。构建：`scripts/build_bridge_qt.ps1`。
 
 ## 测试
 
@@ -43,4 +54,5 @@ python -m konte_bridge --project ..\poc\examples\EP01\konte.json `
 cd bridge
 python -m unittest discover -s tests -p "smoke_test.py" -v
 ```
-冒烟测试会真实起服务，走配对→读→改→锁→上传画面→导出→WS 握手全链路（9 项）。
+冒烟测试会真实起服务，走配对→读→改→锁→上传画面→导出→WS 握手全链路；
+另有 `test_hardening.py` 覆盖 token TTL / 上传限速 / PIN 锁定 / 锁过期 / 任务清理 / health。

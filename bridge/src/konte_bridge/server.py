@@ -23,11 +23,14 @@ MAX_UPLOAD = 10 * 1024 * 1024  # 10MB
 def _route(path: str):
     """返回 (method_key, params) 供分发；method 由调用方区分。"""
     patterns = [
+        (r"^/api/health$", "health"),
         (r"^/api/pair$", "pair"),
         (r"^/api/project$", "project"),
         (r"^/api/cuts$", "cuts"),
         (r"^/api/cuts/([^/]+)$", "cut"),
         (r"^/api/cuts/([^/]+)/drawing$", "drawing"),
+        (r"^/api/cuts/([^/]+)/panels$", "panels"),
+        (r"^/api/cuts/([^/]+)/panels/(\d+)/thumbnail$", "panel_thumb"),
         (r"^/api/cuts/([^/]+)/lock$", "lock"),
         (r"^/api/cuts/([^/]+)/thumbnail$", "thumbnail"),
         (r"^/api/export$", "export"),
@@ -54,6 +57,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
@@ -71,8 +75,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _read_body(self) -> bytes:
         n = int(self.headers.get("Content-Length", 0) or 0)
-        if n > MAX_UPLOAD:
-            raise ApiError(413, "TOO_LARGE", "上传过大")
+        max_up = int(getattr(self.server, "max_upload", MAX_UPLOAD))
+        if n > max_up:
+            raise ApiError(413, "TOO_LARGE", f"上传过大（上限 {max_up} 字节）")
         return self.rfile.read(n) if n else b""
 
     def _read_json(self) -> dict:
@@ -99,6 +104,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Authorization,Content-Type")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
         self.send_header("Content-Length", "0")
         self.end_headers()
 
@@ -109,6 +115,8 @@ class Handler(BaseHTTPRequestHandler):
         if name == "ws":
             return self._handle_ws()
         try:
+            if name == "health":
+                return self._send_json(self.server.store.health())
             if name == "project":
                 self._auth(); return self._send_json(self.server.store.project_info())
             if name == "cuts":
@@ -118,6 +126,10 @@ class Handler(BaseHTTPRequestHandler):
             if name == "thumbnail":
                 self._auth()
                 p = self.server.store.thumbnail_path(args[0])
+                return self._send_bytes(p.read_bytes(), "image/png")
+            if name == "panel_thumb":
+                self._auth()
+                p = self.server.store.thumbnail_path(args[0], int(args[1]))
                 return self._send_bytes(p.read_bytes(), "image/png")
             if name == "export_job":
                 self._auth(); return self._send_json(self.server.store.get_job(args[0]))
@@ -132,22 +144,39 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if name == "pair":
                 body = self._read_json()
-                res = self.server.store.pair(body.get("pin", ""), body.get("deviceName", "device"))
+                client = self.client_address[0] if self.client_address else ""
+                res = self.server.store.pair(body.get("pin", ""), body.get("deviceName", "device"),
+                                             client=client)
                 return self._send_json(res)
+            if name == "cuts":
+                self._auth()
+                body = self._read_json()
+                return self._send_json(self.server.store.create_cut(body), 201)
+            if name == "panels":
+                self._auth()
+                return self._send_json(self.server.store.create_panel(args[0]), 201)
             if name == "drawing":
                 self._auth()
                 fields, image = self._parse_multipart(self._read_body())
                 if not image:
                     raise ApiError(400, "NO_IMAGE", "缺少 image 文件")
+                idx_raw = fields.get("drawingIndex")
+                drawing_index = int(idx_raw) if idx_raw not in (None, "") else None
                 res = self.server.store.save_drawing(
                     args[0], image,
                     frame_kind=fields.get("frameKind"),
                     device_id=fields.get("deviceId") or self._auth()["deviceId"],
+                    drawing_index=drawing_index,
                 )
                 return self._send_json(res)
             if name == "lock":
                 dev = self._auth()
-                return self._send_json(self.server.store.lock(args[0], dev["deviceId"]))
+                try:
+                    body = self._read_json()
+                except ApiError:
+                    body = {}
+                ttl = int(body.get("ttl", 120) or 120)
+                return self._send_json(self.server.store.lock(args[0], dev["deviceId"], ttl=ttl))
             if name == "export":
                 self._auth()
                 body = self._read_json()
@@ -175,6 +204,9 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         name, args = _route(parsed.path)
         try:
+            if name == "cut":
+                self._auth()
+                return self._send_json(self.server.store.delete_cut(args[0]))
             if name == "lock":
                 dev = self._auth()
                 return self._send_json(self.server.store.unlock(args[0], dev["deviceId"]))
@@ -232,13 +264,18 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def create_server(project_path: str | Path, *, host: str = "127.0.0.1", port: int = 17890,
-                  pin: str | None = None, base_psd: str | None = None):
+                  pin: str | None = None, base_psd: str | None = None,
+                  token_ttl: int = 12 * 3600, max_uploads_per_min: int = 60,
+                  max_upload_mb: int = 10, job_ttl: int = 3600, max_jobs: int = 50):
     from .ws import Hub
     hub = Hub()
-    store = Store(project_path, pin=pin, base_psd=base_psd, hub=hub)
+    store = Store(project_path, pin=pin, base_psd=base_psd, hub=hub,
+                  token_ttl=token_ttl, max_uploads_per_min=max_uploads_per_min,
+                  job_ttl=job_ttl, max_jobs=max_jobs)
     httpd = ThreadingHTTPServer((host, port), Handler)
     httpd.store = store
     httpd.hub = hub
+    httpd.max_upload = int(max_upload_mb) * 1024 * 1024
     return httpd
 
 
@@ -250,9 +287,18 @@ def main(argv=None):
     ap.add_argument("--port", type=int, default=17890)
     ap.add_argument("--pin", default=None, help="配对 PIN（默认随机 6 位）")
     ap.add_argument("--base-psd", default=None, help="PDF 底版 PSD")
+    ap.add_argument("--token-ttl", type=int, default=12 * 3600, help="token 有效期（秒）")
+    ap.add_argument("--max-uploads-per-min", type=int, default=60, help="每设备上传限速")
+    ap.add_argument("--max-upload-mb", type=int, default=10, help="单次上传大小上限(MB)")
+    ap.add_argument("--job-ttl", type=int, default=3600, help="导出任务保留秒数")
+    ap.add_argument("--max-jobs", type=int, default=50, help="导出任务上限")
     args = ap.parse_args(argv)
     httpd = create_server(args.project, host=args.host, port=args.port,
-                          pin=args.pin, base_psd=args.base_psd)
+                          pin=args.pin, base_psd=args.base_psd,
+                          token_ttl=args.token_ttl,
+                          max_uploads_per_min=args.max_uploads_per_min,
+                          max_upload_mb=args.max_upload_mb,
+                          job_ttl=args.job_ttl, max_jobs=args.max_jobs)
     print(f"[konte-bridge] listening http://{args.host}:{args.port}  PIN={httpd.store.pin}")
     try:
         httpd.serve_forever()

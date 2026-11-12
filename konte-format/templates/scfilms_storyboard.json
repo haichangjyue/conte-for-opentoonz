@@ -1,0 +1,70 @@
+{
+  "id": "scfilms_storyboard",
+  "name": "scfilms StoryBoard — A4 5-cut 日本分镜（基准模板）",
+  "version": "1.0.0",
+  "description": "由《模板解析_scfilms_StoryBoard.md》实测坐标外部化而来；A4 2480x3507 @300dpi，一页 5 cut。换底版 PSD = 复制本文件改坐标/basePsd。",
+  "basePsd": "X:\\agent\\PhotoshopCT\\footage\\scfilms_StoryBoard.psd",
+  "canvas": { "width": 2480, "height": 3507, "dpi": 300 },
+  "perPage": 5,
+  "columns": {
+    "cut": { "x0": 96, "x1": 210 },
+    "picture": { "x0": 210, "x1": 1245 },
+    "action": { "x0": 1266, "x1": 1600 },
+    "dialogue": { "x0": 1600, "x1": 1950 },
+    "music": { "x0": 1950, "x1": 2259 },
+    "duration": { "x0": 2259, "x1": 2376 }
+  },
+  "frame": {
+    "outer": { "x0": 75, "y0": 336, "x1": 2394, "y1": 3294, "borderWidth": 3 },
+    "inner": { "x0": 96, "y0": 354, "x1": 2376, "y1": 3276 },
+    "verticalLineWidth": 2,
+    "horizontalLineWidth": 1,
+    "heavyLineWidth": 3,
+    "heavyYs": [354, 3276]
+  },
+  "rows": {
+    "header": { "y0": 354, "y1": 417 },
+    "cuts": [
+      { "y0": 417, "y1": 984 },
+      { "y0": 984, "y1": 1557 },
+      { "y0": 1557, "y1": 2130 },
+      { "y0": 2130, "y1": 2703 },
+      { "y0": 2703, "y1": 3276 }
+    ]
+  },
+  "decorations": {
+    "noLabel": { "text": "No.", "x": 77, "y": 258, "size": 40, "font": "decor" },
+    "noLine": { "x0": 150, "y0": 296, "x1": 300, "y1": 296, "width": 2 },
+    "pageNo": { "x": 160, "y": 258, "font": "pageNo" },
+    "pageTotalHint": { "text": "(    +    )", "x": 2270, "y": 3312, "size": 30, "font": "decor" },
+    "pageTotalBox": { "x0": 2247, "y0": 3312, "x1": 2398, "y1": 3352 },
+    "headerLabels": [
+      { "text": "CUT", "x": 120, "y": 366, "font": "header" },
+      { "text": "PICTURE", "x": 660, "y": 366, "font": "header" },
+      { "text": "ACTION", "x": 1300, "y": 366, "font": "header" },
+      { "text": "DIALOGE", "x": 1680, "y": 366, "font": "header" },
+      { "text": "MUSIC/SE", "x": 2000, "y": 366, "font": "header" },
+      { "text": "Dur.", "x": 2295, "y": 366, "font": "header" }
+    ]
+  },
+  "picture": {
+    "inset": 8,
+    "mode": "contain",
+    "oversizeMode": "cover",
+    "bleedIndicator": true,
+    "whiteFill": true
+  },
+  "fonts": {
+    "default": { "family": "Source Han Sans", "size": 30, "lineSpacing": 1.18, "overflow": "shrink", "minSize": 14 },
+    "header": { "family": "Source Han Sans", "size": 28, "overflow": "truncate" },
+    "cut": { "family": "Source Han Sans", "size": 40, "bold": true },
+    "action": { "family": "Source Han Sans", "size": 30, "lineSpacing": 1.18, "overflow": "shrink", "minSize": 16, "maxLines": 9 },
+    "dialogue": { "family": "Source Han Sans", "size": 30, "lineSpacing": 1.18, "overflow": "ellipsis", "minSize": 18, "maxLines": 9 },
+    "music": { "family": "Source Han Sans", "size": 28, "lineSpacing": 1.18, "overflow": "ellipsis", "minSize": 16, "maxLines": 6 },
+    "duration": { "family": "Source Han Sans", "size": 40, "overflow": "truncate" },
+    "pageNo": { "family": "Source Han Sans", "size": 56 },
+    "pageTotal": { "family": "Source Han Sans", "size": 34 },
+    "decor": { "family": "Source Han Sans", "size": 30 }
+  },
+  "text": { "pad": 10, "align": "left", "valign": "top", "kinsoku": true, "minSize": 12 }
+}

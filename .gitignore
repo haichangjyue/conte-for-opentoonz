@@ -23,6 +23,12 @@ __pycache__/
 # generated export artifacts (machine-specific absolute paths)
 poc/examples/*/out/tnz/
 **/sceneIcons/
+# bundled CJK font binaries (release-time copy; keep README/OFL/fonts.json)
+konte-format/fonts/*.ttf
+konte-format/fonts/*.otf
+konte-format/fonts/*.ttc
 # NEVER commit private repo here
 ../konte-studio/
 konte-studio/
+# 真实分镜试产（专有素材，勿入库）
+poc/examples/SK01/

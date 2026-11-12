@@ -87,10 +87,41 @@ static void testKernelDryRun() {
   fs::remove_all(out);
 }
 
+static void testSoundOffset() {
+  std::string s(kSamplePlan);
+  auto pos = s.find("\"sound\": null");
+  CHECK(pos != std::string::npos, "sample has sound field");
+  s.replace(pos, 13, "\"sound\": {\"path\": \"audio/C001.wav\", \"offsetFrames\": 12}");
+  ScenePlan p = ScenePlan::fromJson(Json::parse(s));
+  CHECK(p.hasSound, "hasSound");
+  CHECK(p.soundPath == "audio/C001.wav", "soundPath");
+  CHECK(p.soundOffsetFrames == 12, "sound offset parsed");
+  CHECK(validatePlan(p).empty(), "offset plan validates");
+  ScenePlan q = ScenePlan::fromJson(Json::parse(s));
+  q.soundOffsetFrames = -1;
+  CHECK(!validatePlan(q).empty(), "negative offset must fail");
+}
+
+static void testReferenceImages() {
+  std::string s(kSamplePlan);
+  auto pos = s.find("\"referenceImage\": \"scenes/EP01_C001.ref.png\",");
+  CHECK(pos != std::string::npos, "referenceImage line");
+  std::string ins = "\"referenceImages\": [\"scenes/r1.png\", \"scenes/r2.png\"],";
+  s.insert(pos, ins + "\n  ");
+  ScenePlan p = ScenePlan::fromJson(Json::parse(s));
+  CHECK(p.referenceImages.size() == 2, "multi referenceImages parsed");
+  CHECK(p.referenceImages[0] == "scenes/r1.png", "referenceImages[0]");
+  // 无 referenceImages 时回退为单张 referenceImage
+  ScenePlan q = ScenePlan::fromJson(Json::parse(kSamplePlan));
+  CHECK(q.referenceImages.size() == 1, "fallback one reference");
+}
+
 int main() {
   testParse();
   testValidate();
   testJsonRoundtrip();
+  testSoundOffset();
+  testReferenceImages();
   testKernelDryRun();
   if (g_fail == 0) { std::cout << "ALL C++ TESTS PASSED\n"; return 0; }
   std::cerr << g_fail << " checks failed\n";

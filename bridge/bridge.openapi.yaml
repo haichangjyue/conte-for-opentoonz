@@ -14,6 +14,24 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /api/health:
+    get:
+      summary: 健康/存活探针（无需鉴权；供 sidecar 看门狗）
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  uptimeSec: { type: number }
+                  tokens: { type: integer }
+                  jobs: { type: integer }
+                  clients: { type: integer }
+                  project: { type: string }
   /api/pair:
     post:
       summary: 用 PIN 配对，换取会话 token（无需鉴权）
@@ -39,7 +57,9 @@ paths:
                   token: { type: string }
                   projectId: { type: string }
                   deviceId: { type: string }
+                  expiresIn: { type: integer, description: token 有效期（秒，默认 12h） }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { description: PIN 尝试过于频繁（PAIR_LOCKED） }
   /api/project:
     get:
       summary: 获取项目元信息与画幅规格（供前端设定画布 16:9 + bleed + DPI + fps）

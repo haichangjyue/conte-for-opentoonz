@@ -157,6 +157,7 @@ def make(out: Path) -> Path:
             "status": "final",
             "fps": FPS,
             "template": "scfilms_StoryBoard.psd",
+            "pdfTemplate": "scfilms_storyboard",
             "frame": {"width": FRAME_W, "height": FRAME_H, "aspect": "16:9"},
             "bleed": {"left": 0, "right": 0, "top": 0, "bottom": 0},
             "cameraBox": {"x": 0, "y": 0, "w": FRAME_W, "h": FRAME_H},

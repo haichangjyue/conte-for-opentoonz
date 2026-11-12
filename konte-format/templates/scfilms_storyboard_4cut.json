@@ -1,0 +1,69 @@
+{
+  "id": "scfilms_storyboard_4cut",
+  "name": "社内変体 — A4 4-cut（大画格）变体模板",
+  "version": "1.0.0",
+  "description": "多模板验证用变体：同一 A4 画布，一页 4 个更大的 cut 行（无底版 PSD，用内置矢量网格兜底）。证明『换模板 = 换一份 JSON』，与 5-cut 基准互不影响。",
+  "basePsd": null,
+  "canvas": { "width": 2480, "height": 3507, "dpi": 300 },
+  "perPage": 4,
+  "columns": {
+    "cut": { "x0": 96, "x1": 210 },
+    "picture": { "x0": 210, "x1": 1245 },
+    "action": { "x0": 1266, "x1": 1600 },
+    "dialogue": { "x0": 1600, "x1": 1950 },
+    "music": { "x0": 1950, "x1": 2259 },
+    "duration": { "x0": 2259, "x1": 2376 }
+  },
+  "frame": {
+    "outer": { "x0": 75, "y0": 336, "x1": 2394, "y1": 3294, "borderWidth": 3 },
+    "inner": { "x0": 96, "y0": 354, "x1": 2376, "y1": 3276 },
+    "verticalLineWidth": 2,
+    "horizontalLineWidth": 1,
+    "heavyLineWidth": 3,
+    "heavyYs": [354, 3276]
+  },
+  "rows": {
+    "header": { "y0": 354, "y1": 417 },
+    "cuts": [
+      { "y0": 417, "y1": 1132 },
+      { "y0": 1132, "y1": 1847 },
+      { "y0": 1847, "y1": 2562 },
+      { "y0": 2562, "y1": 3276 }
+    ]
+  },
+  "decorations": {
+    "noLabel": { "text": "No.", "x": 77, "y": 258, "size": 40, "font": "decor" },
+    "noLine": { "x0": 150, "y0": 296, "x1": 300, "y1": 296, "width": 2 },
+    "pageNo": { "x": 160, "y": 258, "font": "pageNo" },
+    "pageTotalHint": { "text": "(    +    )", "x": 2270, "y": 3312, "size": 30, "font": "decor" },
+    "pageTotalBox": { "x0": 2247, "y0": 3312, "x1": 2398, "y1": 3352 },
+    "headerLabels": [
+      { "text": "CUT", "x": 120, "y": 366, "font": "header" },
+      { "text": "PICTURE", "x": 660, "y": 366, "font": "header" },
+      { "text": "ACTION", "x": 1300, "y": 366, "font": "header" },
+      { "text": "DIALOGE", "x": 1680, "y": 366, "font": "header" },
+      { "text": "MUSIC/SE", "x": 2000, "y": 366, "font": "header" },
+      { "text": "Dur.", "x": 2295, "y": 366, "font": "header" }
+    ]
+  },
+  "picture": {
+    "inset": 8,
+    "mode": "contain",
+    "oversizeMode": "cover",
+    "bleedIndicator": true,
+    "whiteFill": true
+  },
+  "fonts": {
+    "default": { "family": "Source Han Sans", "size": 32, "lineSpacing": 1.2, "overflow": "shrink", "minSize": 14 },
+    "header": { "family": "Source Han Sans", "size": 28, "overflow": "truncate" },
+    "cut": { "family": "Source Han Sans", "size": 44, "bold": true },
+    "action": { "family": "Source Han Sans", "size": 32, "lineSpacing": 1.2, "overflow": "shrink", "minSize": 16, "maxLines": 10 },
+    "dialogue": { "family": "Source Han Sans", "size": 32, "lineSpacing": 1.2, "overflow": "ellipsis", "minSize": 18, "maxLines": 10 },
+    "music": { "family": "Source Han Sans", "size": 30, "lineSpacing": 1.2, "overflow": "ellipsis", "minSize": 16, "maxLines": 8 },
+    "duration": { "family": "Source Han Sans", "size": 44, "overflow": "truncate" },
+    "pageNo": { "family": "Source Han Sans", "size": 56 },
+    "pageTotal": { "family": "Source Han Sans", "size": 34 },
+    "decor": { "family": "Source Han Sans", "size": 30 }
+  },
+  "text": { "pad": 10, "align": "left", "valign": "top", "kinsoku": true, "minSize": 12 }
+}

@@ -15,7 +15,7 @@
    - 每 cut **渲染参考图**（Q8）+ **ScenePlan**（`.tnz` 输入契约）+ **manifest.json**
 2. **Bridge sidecar（Python，`bridge/src/konte_bridge/`）**
    - OpenAPI 9 条路径 + `/ws` 事件推送，PIN/token、cut 锁、画面上传→缩略图、导出任务
-3. **测试**：PoC 16 项 + Bridge 9 项，全绿。
+3. **测试**：PoC 48 项 + Bridge(Python) 16 项 + Qt Bridge 6 项，全绿。
 
 > 已交付示例：`poc/examples/EP01/out/storyboard.pdf`（2 页 A4）、`manifest.json`、7 张参考图、7 份 ScenePlan。
 
@@ -65,9 +65,23 @@ pwsh -File scripts/package_deliverable.ps1 -OutRoot "X:\agent\build\deliverables
    - `konte_poc package` / `scripts/package_deliverable.ps1`：Python（参考图/PDF/manifest/ScenePlan）+ C++（`.tnz`）
      汇成交付目录；参考层相对引用；含 `DELIVERY.md` 与 `manifest` 校验；自动 zip。
    - 实测 EP01：7 `.tnz` + 7 参考图 + `storyboard.pdf` + `manifest.json` → `EP01.zip`（0.68MB），verify 全 OK。
-3. **P4 收尾**：模板多套坐标配置（换 PSD）、字体授权锁定（Noto/Source Han）。
-4. **P2 Bridge 生产化**：内嵌 `QTcpServer/QWebSocketServer` 或加固 sidecar 启动生命周期。
-5. **P5 边界**：不同时长/超框/声音切片批量跑；>200 cut 性能与断点续。
+3. **P4 收尾** — ✅ 完成
+   - 模板多套坐标配置：`konte-format/templates/*.json` + `pdf-template.schema.json`；`pdfgen` 改为模板驱动（换底版=换模板）。
+   - 字体授权锁定：默认 **Source Han Sans（思源黑体，SIL OFL 1.1）**，随包 `konte-format/fonts/`（OFL 全文 + fonts.json）。
+   - PDF 视觉精修：长台词 shrink/ellipsis 溢出、日文禁则换行、超框 cover 裁切/bleed 虚线提示；多模板（4-cut 变体）实测。
+4. **P5｜批量导出 / 断点续 / 进度日志** — ✅ 完成
+   - `konte_poc batch`：`_export_state.json` 断点续、`export_log.jsonl` 进度、`batch_report.json` 失败汇总；只对增量 ScenePlan 调内核。
+   - 实测：250 cut 结构包二次全复用（内核零调用）；真实内核 7 cut 首跑 7/7、二次 0.02s 全复用。
+5. **打包增强** — ✅ 完成：manifest 音频字段、`--no-audio`、`--zip-name`；含音频/静音包均 verify ok。
+6. **Bridge 生产化** — ✅ Python 加固完成（token TTL/PIN 锁定/上传限速/锁 TTL/任务保留/health）；
+   ✅ Qt5 原生内嵌服务 `bridge-qt/`（QTcpServer + 手写 WS，含 multipart 图片上传/缩略图、export、WS 广播）。
+7. **P5 强化** — ✅ 流式/分卷 PDF（`pdfstream.py`，>8 页自动流式，250 cut/50 页实测）；✅ 音频 `offsetFrames` 内核落地；
+   ⏳ 声音切片边界、导出并发、多音轨/混音。
+8. **OT 构建可复现** — ✅ 集成钩子做成 `patches/opentoonz-konte-hook.patch`（可提交/回滚，构建脚本优先应用）。
+9. **真实分镜试产** — ✅ 支持「一镜跨多格」`cut.layout`；`import_storyboard_tif.py` 从真实整页 TIF 自动推断跨格并重建 konte.json；
+   实测 2 页真实分镜（5 cut，页合计 14+16 / 8+0 与原图一致），已扩到 7 页/22 cut 并验收通过。
+10. **编辑器 Web MVP（轻量草图）** — ✅ `repos/konte-studio/web/`：配对→项目/镜头（按页分组+缩略图）→文字/时长→画笔/橡皮/撤销/描摹/导入→保存画面→导出；
+    平板触控/压感/响应式 + 上一镜/下一镜快捷键；Edge headless E2E（桌面 + CDP Touch 横/竖屏）在 Python/Qt Bridge 均跑通。完整绘制引擎不在 MVP（原画用 OT）。
 
 ## 4. 边界与约束（不漂移）
 
@@ -79,4 +93,5 @@ pwsh -File scripts/package_deliverable.ps1 -OutRoot "X:\agent\build\deliverables
 ## 5. 依赖
 
 - Python 3.10+；**Pillow**（图像/PDF）。PoC 其余为 stdlib（`http.server`、`json`、`socket`）。
-- 字体：默认取系统 CJK（msyh/Noto/MS Gothic）；可用 `KONTE_FONT` 指定。
+- 字体：默认 **Source Han Sans（思源黑体，SIL OFL 1.1）**（覆盖中日混排）；模板 `fonts.*.family` 可指定字体族，
+  可用 `KONTE_FONT` 指定单个字体文件；随包字体/许可证见 `konte-format/fonts/`。

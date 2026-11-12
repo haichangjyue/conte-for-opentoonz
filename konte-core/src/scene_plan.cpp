@@ -33,6 +33,13 @@ ScenePlan ScenePlan::fromJson(const Json& j) {
     p.duration.durationSec = d.contains("durationSec") ? d.at("durationSec").asDouble() : 0.0;
   }
   p.referenceImage = getStr(j, "referenceImage");
+  if (j.contains("referenceImages")) {
+    const Json& arr = j.at("referenceImages");
+    for (size_t i = 0; i < arr.size(); ++i)
+      p.referenceImages.push_back(arr[i].asString());
+  }
+  if (p.referenceImages.empty() && !p.referenceImage.empty())
+    p.referenceImages.push_back(p.referenceImage);
   if (j.contains("level")) {
     const Json& lv = j.at("level");
     p.levelPath = getStr(lv, "path", p.referenceImage);
@@ -87,6 +94,7 @@ ScenePlan ScenePlan::fromJson(const Json& j) {
   if (j.contains("sound") && !j.at("sound").isNull()) {
     p.hasSound = true;
     p.soundPath = getStr(j.at("sound"), "path");
+    p.soundOffsetFrames = getInt(j.at("sound"), "offsetFrames", 0);
   }
   return p;
 }
@@ -106,6 +114,8 @@ std::string validatePlan(const ScenePlan& p) {
   if (p.referenceImage.empty()) e << "referenceImage 为空; ";
   if (p.frame.kind != "standard" && p.frame.kind != "oversize")
     e << "frame.kind 非法(" << p.frame.kind << "); ";
+  if (p.hasSound && p.soundOffsetFrames < 0)
+    e << "sound.offsetFrames 不能为负(" << p.soundOffsetFrames << "); ";
   return e.str();
 }
 

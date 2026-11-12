@@ -1,0 +1,14 @@
+diff --git a/toonz/sources/CMakeLists.txt b/toonz/sources/CMakeLists.txt
+--- a/toonz/sources/CMakeLists.txt
++++ b/toonz/sources/CMakeLists.txt
+@@ -771,3 +771,10 @@
+ if(BUILD_ENV_UNIXLIKE AND NOT BUILD_TARGET_WIN)
+     add_subdirectory(xdg-data)
+ endif()
++
++# ===== konte-core export kernel (Repo1 P1 integration) =====
++option(KONTE_BUILD_EXPORT_KERNEL "Build konte-core export kernel (konte-export)" OFF)
++if(KONTE_BUILD_EXPORT_KERNEL)
++  set(KONTE_WITH_OPENTOONZ ON CACHE BOOL "" FORCE)
++  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../../konte-core" "${CMAKE_BINARY_DIR}/konte-core")
++endif()

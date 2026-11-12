@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/pdf-template.schema.json",
+  "title": "Konte PDF Template",
+  "description": "分镜 PDF 版式模板配置（P4）。把《模板解析_scfilms_StoryBoard.md》的实测坐标外部化：换一套底版/版式 = 换一个模板 JSON。所有坐标为像素，原点左上。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "version", "canvas", "perPage", "columns", "rows", "decorations", "picture", "fonts", "text"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "basePsd": { "type": ["string", "null"], "description": "可选：默认空白底版 PSD 路径；为空则用内置矢量网格兜底" },
+    "canvas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "dpi"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "dpi": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "perPage": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "columns": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cut", "picture", "action", "dialogue", "music", "duration"],
+      "properties": {
+        "cut": { "$ref": "#/$defs/column" },
+        "picture": { "$ref": "#/$defs/column" },
+        "action": { "$ref": "#/$defs/column" },
+        "dialogue": { "$ref": "#/$defs/column" },
+        "music": { "$ref": "#/$defs/column" },
+        "duration": { "$ref": "#/$defs/column" }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "outer": { "$ref": "#/$defs/borderRect" },
+        "inner": { "$ref": "#/$defs/bandRect" },
+        "verticalLineWidth": { "type": "integer", "minimum": 1 },
+        "horizontalLineWidth": { "type": "integer", "minimum": 1 },
+        "heavyLineWidth": { "type": "integer", "minimum": 1 },
+        "heavyYs": { "type": "array", "items": { "type": "integer" } }
+      }
+    },
+    "rows": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["header", "cuts"],
+      "properties": {
+        "header": { "$ref": "#/$defs/band" },
+        "cuts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/band" } }
+      }
+    },
+    "decorations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["noLabel", "noLine", "pageNo", "pageTotalHint", "pageTotalBox", "headerLabels"],
+      "properties": {
+        "noLabel": { "$ref": "#/$defs/textAt" },
+        "noLine": { "$ref": "#/$defs/line" },
+        "pageNo": { "$ref": "#/$defs/textAt" },
+        "pageTotalHint": { "$ref": "#/$defs/textAt" },
+        "pageTotalBox": { "$ref": "#/$defs/bandRect" },
+        "headerLabels": { "type": "array", "items": { "$ref": "#/$defs/textAt" } }
+      }
+    },
+    "picture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inset", "mode"],
+      "properties": {
+        "inset": { "type": "integer", "minimum": 0 },
+        "mode": { "enum": ["contain", "cover"] },
+        "oversizeMode": { "enum": ["contain", "cover"] },
+        "bleedIndicator": { "type": "boolean" },
+        "whiteFill": { "type": "boolean" }
+      }
+    },
+    "fonts": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/fontSpec" },
+      "required": ["default"],
+      "properties": {
+        "default": { "$ref": "#/$defs/fontSpec" }
+      }
+    },
+    "text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pad"],
+      "properties": {
+        "pad": { "type": "integer", "minimum": 0 },
+        "align": { "enum": ["left", "center", "right"] },
+        "valign": { "enum": ["top", "middle", "bottom"] },
+        "kinsoku": { "type": "boolean" },
+        "minSize": { "type": "integer", "minimum": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "column": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x0", "x1"],
+      "properties": {
+        "x0": { "type": "integer", "minimum": 0 },
+        "x1": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "band": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["y0", "y1"],
+      "properties": {
+        "y0": { "type": "integer", "minimum": 0 },
+        "y1": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "bandRect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x0", "y0", "x1", "y1"],
+      "properties": {
+        "x0": { "type": "integer" },
+        "y0": { "type": "integer" },
+        "x1": { "type": "integer" },
+        "y1": { "type": "integer" }
+      }
+    },
+    "borderRect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x0", "y0", "x1", "y1", "borderWidth"],
+      "properties": {
+        "x0": { "type": "integer" },
+        "y0": { "type": "integer" },
+        "x1": { "type": "integer" },
+        "y1": { "type": "integer" },
+        "borderWidth": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x0", "y0", "x1", "y1"],
+      "properties": {
+        "x0": { "type": "integer" },
+        "y0": { "type": "integer" },
+        "x1": { "type": "integer" },
+        "y1": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "textAt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "text": { "type": "string" },
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "size": { "type": "integer", "minimum": 1 },
+        "font": { "type": "string" }
+      }
+    },
+    "fontSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "size"],
+      "properties": {
+        "family": { "type": "string" },
+        "size": { "type": "integer", "minimum": 1 },
+        "bold": { "type": "boolean" },
+        "lineSpacing": { "type": "number", "minimum": 0.5, "maximum": 4 },
+        "overflow": { "enum": ["shrink", "truncate", "ellipsis", "clip"] },
+        "minSize": { "type": "integer", "minimum": 1 },
+        "maxLines": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

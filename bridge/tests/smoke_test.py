@@ -67,6 +67,13 @@ class TestBridge(unittest.TestCase):
         except urllib.error.HTTPError as e:
             return e.code, e.read()
 
+    def test_00_health(self):
+        code, body = self.req("GET", "/api/health", token=False)
+        self.assertEqual(code, 200)
+        data = json.loads(body)
+        self.assertTrue(data["ok"])
+        self.assertIn("uptimeSec", data)
+
     def test_01_unauthorized(self):
         code, _ = self.req("GET", "/api/project", token=False)
         self.assertEqual(code, 401)
