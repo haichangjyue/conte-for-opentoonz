@@ -75,6 +75,7 @@ writeManifest(...);   // 与 PoC manifest 结构一致
   `frameCount/notes/sounds` 全部通过（含 1 个带 WAV 的 cut：`sounds=1`）。
   **参考层锁定**：`TXshSimpleLevel::setIsReadOnly(true)` 且参考 PNG 置为只读（重载即只读）。环境与复现见
   `docs/BUILD_ENV_WINDOWS.md` / `scripts/build_export_with_ot.ps1`。
-- **仍待完善**：模板 `.tnz` 套用细节、打包时把 level 路径改为相对 `$scenefolder`。
+- **模板与打包（2026-11-12 收尾）**：`--template` 以模板 `.tnz` 为底并**清空其 cells/notes**（仅取相机/fps/项目设置，
+  实测模板相机 1280×720 生效）；参考层复制到场景目录并以相对文件名载入，`.tnz` 记录**相对路径**（`"EP01_C001.ref.png"`，无绝对路径）。
 - **构建**：`pwsh -File scripts/build_kernel.ps1`（纯逻辑）；`pwsh -File scripts/build_export_with_ot.ps1`（真实 .tnz）。
 

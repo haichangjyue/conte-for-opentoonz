@@ -40,7 +40,9 @@
 
 - **图像 IO 未初始化**：`loadLevel` 对 png 返回 0 → 需 `Tiio::defineStd(); initImageIo();`（已在 `ot_scene_writer.cpp` 调用）。
 - **`ToonzScene::save` 仅留下 `<file>.tmp`** 未完成 replace（本环境实测）→ 内核在保存后检测并完成 `.tmp → .tnz` 改名兜底。
-- **参考层路径**：当前 `.tnz` 内记录为绝对路径；正式打包需 OT 的 Export Scene / 资源收集改为相对 `$scenefolder`（P2 打包阶段处理）。
+- **参考层路径（已解决）**：导出时把参考图复制到场景目录并以相对文件名载入，`.tnz` 记录相对路径（如 `EP01_C001.ref.png`），不含绝对路径。
+- **模板**：`--template` 以模板 `.tnz` 为底，构建时清空模板 cells/notes，仅取相机/fps/项目设置（实测模板 1280×720 生效）。模板文件须为无 BOM、OT 可解析的 `.tnz`。
+- **参考层只读**：导出后把参考 PNG 置为只读；OT 重载时据此判定 level 只读（`.tnz` 本身不序列化该标志）。
 - **QtScript 源码构建需要 perl**：用 Git 自带 perl。
 
 ## 一键脚本

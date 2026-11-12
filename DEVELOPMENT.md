@@ -54,7 +54,7 @@ cd poc; $env:PYTHONPATH = (Get-Location).Path
    - ✅ 7/7 cut 生成真实 `.tnz`，`loadFrameCount` 与时长帧数逐一相等；参考层/Note 写入正确。
    - ✅ 参考层锁定（`setIsReadOnly` + 参考 PNG 只读）、声音列（`TXshSoundColumn`，验证 cut sounds=1）、
      `loadTnzFile` 重载校验通过。
-   - ⏳ 收尾：模板 `.tnz` 套用、打包改相对 `$scenefolder`。
+   - ✅ 模板 `.tnz` 套用（仅取相机/fps、清空模板内容；实测 1280×720 生效）、参考层相对 `$scenefolder` 打包（无绝对路径）。
 2. **P4 收尾**：模板多套坐标配置（换 PSD）、字体授权锁定（Noto/Source Han）。
 3. **P2 Bridge 生产化**：内嵌 `QTcpServer/QWebSocketServer` 或加固 sidecar 启动生命周期。
 4. **P5 边界**：不同时长/超框/声音切片批量跑；>200 cut 性能与断点续。

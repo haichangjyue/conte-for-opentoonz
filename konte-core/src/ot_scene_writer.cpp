@@ -94,25 +94,49 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
     ToonzScene scene;
     dbg("scene constructed");
 
-    // 1) 套模板 + 初始化场景（initializeScene 可能重置 scene path，故之后设路径）
-    if (!templatePath.empty()) {
-      TFilePath tpl(templatePath);
-      if (!tpl.isEmpty()) scene.loadTnzFile(tpl);  // 以模板为底（相机/fps/项目设置）
+    // 1) 套模板：优先以模板 .tnz 为底（相机/fps/项目设置）；否则用默认项目初始化
+    const bool hasTemplate = !templatePath.empty();
+    if (hasTemplate) {
+      scene.loadTnzFile(TFilePath(templatePath));
+      dbg("template loaded: " + templatePath);
+    } else {
+      TProjectManager::instance()->initializeScene(&scene);
+      dbg("initializeScene done (no template)");
     }
-    TProjectManager::instance()->initializeScene(&scene);
-    dbg("initializeScene done");
 
-    // 0) 设定场景路径（便于 OT 以相对 $scenefolder 编码 level 路径）
+    // 0) 设定场景路径
     TFilePath out(outFile);
     scene.setScenePath(out);
     dbg("scene path set: " + outFile);
 
-    // 2) 参考层（Q8：渲染位图参考层）。level 路径需为解码后的实际路径。
-    TFilePath refPath(plan.levelPath);
-    dbg("loadLevel: " + plan.levelPath);
-    TXshLevel* level = scene.loadLevel(refPath);
+    // 模板仅提供相机/fps/项目设置：清空模板自带的 cells 与 notes，避免内容泄漏
+    if (hasTemplate) {
+      if (TXsheet* tx = scene.getXsheet()) {
+        while (tx->getColumnCount() > 0) tx->removeColumn(0);
+        if (TXshNoteSet* nt = tx->getNotes()) nt->m_notes.clear();
+        tx->updateFrameCount();
+        dbg("template content cleared");
+      }
+    }
+
+    // 2) 参考层：复制到场景目录，并以相对文件名载入 → .tnz 记录相对 $scenefolder
+    std::filesystem::path outP(outFile);
+    std::filesystem::path sceneDir = outP.parent_path();
+    std::filesystem::path refAbs(plan.levelPath);
+    std::filesystem::path refLocal = sceneDir / refAbs.filename();
+    std::string levelLoadName = refAbs.filename().string();
+    if (!refAbs.empty() && refAbs != refLocal) {
+      std::error_code ec;
+      std::filesystem::permissions(refLocal,
+          std::filesystem::perms::owner_all, std::filesystem::perm_options::add, ec);
+      std::filesystem::copy_file(refAbs, refLocal,
+          std::filesystem::copy_options::overwrite_existing, ec);
+      dbg(std::string("ref copied into scene dir, ec=") + std::to_string(ec.value()));
+    }
+    dbg("loadLevel(relative): " + levelLoadName);
+    TXshLevel* level = scene.loadLevel(TFilePath(levelLoadName));
     if (!level) {
-      err = "loadLevel 失败: " + plan.levelPath;
+      err = "loadLevel 失败: " + levelLoadName;
       return false;
     }
     dbg("loadLevel ok");
@@ -217,11 +241,11 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
     {
       std::error_code ec;
       std::filesystem::permissions(
-          plan.levelPath,
+          refLocal,
           std::filesystem::perms::owner_read | std::filesystem::perms::group_read |
               std::filesystem::perms::others_read,
           std::filesystem::perm_options::replace, ec);
-      auto st = std::filesystem::status(plan.levelPath, ec);
+      auto st = std::filesystem::status(refLocal, ec);
       bool ro = (st.permissions() & std::filesystem::perms::owner_write) ==
                 std::filesystem::perms::none;
       dbg(std::string("ref file readOnly=") + (ro ? "yes" : "no"));
