@@ -5,6 +5,7 @@
     "status": "final",
     "fps": 24,
     "template": "scfilms_StoryBoard.psd",
+    "pdfTemplate": "scfilms_storyboard",
     "frame": {
       "width": 1920,
       "height": 1080,
@@ -67,7 +68,7 @@
           "source": "desktop",
           "deviceId": "desk-main",
           "revision": 1,
-          "updatedAt": "2026-11-12T13:52:40+08:00"
+          "updatedAt": "2026-11-12T14:29:05+08:00"
         }
       ],
       "action": "A-part 开场：城市远景。カメラ固定。角色の動きに合わせて間を取る。",
@@ -93,7 +94,7 @@
         "sceneFile": null
       },
       "revision": 1,
-      "updatedAt": "2026-11-12T13:52:40+08:00"
+      "updatedAt": "2026-11-12T14:29:05+08:00"
     },
     {
       "id": "ep01-c002",
@@ -125,7 +126,7 @@
           "source": "desktop",
           "deviceId": "desk-main",
           "revision": 1,
-          "updatedAt": "2026-11-12T13:52:40+08:00"
+          "updatedAt": "2026-11-12T14:29:05+08:00"
         }
       ],
       "action": "主角入门（中景）。カメラ固定。角色の動きに合わせて間を取る。",
@@ -145,7 +146,7 @@
         "sceneFile": null
       },
       "revision": 1,
-      "updatedAt": "2026-11-12T13:52:40+08:00"
+      "updatedAt": "2026-11-12T14:29:05+08:00"
     },
     {
       "id": "ep01-c003",
@@ -177,7 +178,7 @@
           "source": "desktop",
           "deviceId": "desk-main",
           "revision": 1,
-          "updatedAt": "2026-11-12T13:52:40+08:00"
+          "updatedAt": "2026-11-12T14:29:05+08:00"
         }
       ],
       "action": "对话：反应镜头。カメラ固定。角色の動きに合わせて間を取る。",
@@ -203,7 +204,7 @@
         "sceneFile": null
       },
       "revision": 1,
-      "updatedAt": "2026-11-12T13:52:40+08:00"
+      "updatedAt": "2026-11-12T14:29:05+08:00"
     },
     {
       "id": "ep01-c004",
@@ -235,7 +236,7 @@
           "source": "desktop",
           "deviceId": "desk-main",
           "revision": 1,
-          "updatedAt": "2026-11-12T13:52:40+08:00"
+          "updatedAt": "2026-11-12T14:29:05+08:00"
         }
       ],
       "action": "横摇（超框 bleed）。カメラ固定。角色の動きに合わせて間を取る。",
@@ -255,7 +256,7 @@
         "sceneFile": null
       },
       "revision": 1,
-      "updatedAt": "2026-11-12T13:52:40+08:00"
+      "updatedAt": "2026-11-12T14:29:05+08:00"
     },
     {
       "id": "ep01-c005",
@@ -287,7 +288,7 @@
           "source": "desktop",
           "deviceId": "desk-main",
           "revision": 1,
-          "updatedAt": "2026-11-12T13:52:40+08:00"
+          "updatedAt": "2026-11-12T14:29:05+08:00"
         }
       ],
       "action": "奔跑（远景）。カメラ固定。角色の動きに合わせて間を取る。",
@@ -318,7 +319,7 @@
         "sceneFile": null
       },
       "revision": 1,
-      "updatedAt": "2026-11-12T13:52:40+08:00"
+      "updatedAt": "2026-11-12T14:29:05+08:00"
     },
     {
       "id": "ep01-c006",
@@ -350,7 +351,7 @@
           "source": "desktop",
           "deviceId": "desk-main",
           "revision": 1,
-          "updatedAt": "2026-11-12T13:52:40+08:00"
+          "updatedAt": "2026-11-12T14:29:05+08:00"
         }
       ],
       "action": "特写：眼神。カメラ固定。角色の動きに合わせて間を取る。",
@@ -370,7 +371,7 @@
         "sceneFile": null
       },
       "revision": 1,
-      "updatedAt": "2026-11-12T13:52:40+08:00"
+      "updatedAt": "2026-11-12T14:29:05+08:00"
     },
     {
       "id": "ep01-c007",
@@ -402,7 +403,7 @@
           "source": "desktop",
           "deviceId": "desk-main",
           "revision": 1,
-          "updatedAt": "2026-11-12T13:52:40+08:00"
+          "updatedAt": "2026-11-12T14:29:05+08:00"
         }
       ],
       "action": "转场：天空空镜。カメラ固定。角色の動きに合わせて間を取る。",
@@ -428,12 +429,12 @@
         "sceneFile": null
       },
       "revision": 1,
-      "updatedAt": "2026-11-12T13:52:40+08:00"
+      "updatedAt": "2026-11-12T14:29:05+08:00"
     }
   ],
   "meta": {
-    "createdAt": "2026-11-12T13:52:40+08:00",
-    "updatedAt": "2026-11-12T13:52:40+08:00",
+    "createdAt": "2026-11-12T14:29:05+08:00",
+    "updatedAt": "2026-11-12T14:29:05+08:00",
     "authors": [
       "Director"
     ]
