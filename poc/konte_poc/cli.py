@@ -9,6 +9,7 @@ import sys
 
 from .errors import ExportGateError, InvariantError, SchemaError
 from .export import export_project
+from .package import build_package
 from .model import KonteProject
 
 
@@ -55,6 +56,26 @@ def _cmd_export(args) -> int:
     return 0
 
 
+def _cmd_package(args) -> int:
+    try:
+        report = build_package(
+            args.project, args.out_root,
+            base_psd=args.base_psd, exporter=args.exporter,
+            template=args.template, make_zip=not args.no_zip,
+            schema_path=args.schema,
+        )
+    except ExportGateError as e:
+        print(f"[GATE] {e}", file=sys.stderr)
+        for d in e.details:
+            print(f"  - {d}", file=sys.stderr)
+        return 3
+    except (SchemaError, InvariantError) as e:
+        print(f"[INVALID] {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if report.get("ok") else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="konte-poc", description="konte-core PoC 工具（导出/校验）")
     ap.add_argument("--schema", default=None, help="konte.schema.json 路径（默认用仓库内 konte-format）")
@@ -74,6 +95,15 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--base-psd", default=None, help="空白底版 PSD（默认用内置兜底网格）")
     e.add_argument("--no-pdf", action="store_true", help="跳过 PDF 生成")
     e.set_defaults(func=_cmd_export)
+
+    p = sub.add_parser("package", help="交付打包：tnz + 参考图 + PDF + manifest + zip")
+    p.add_argument("project")
+    p.add_argument("--out-root", required=True, help="交付根目录（其下生成 <PROJECT>/ 与 <PROJECT>.zip）")
+    p.add_argument("--base-psd", default=None)
+    p.add_argument("--exporter", default=None, help="konte-export 可执行文件（生成真实 .tnz）")
+    p.add_argument("--template", default=None, help="模板 .tnz")
+    p.add_argument("--no-zip", action="store_true")
+    p.set_defaults(func=_cmd_package)
     return ap
 
 

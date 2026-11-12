@@ -59,6 +59,11 @@ python -m konte_poc export examples\EP01\konte.json --out examples\EP01\out `
 
 # 4) 测试
 python -m unittest discover -s tests -v
+
+# 5) 端到端交付打包（Python 参考图/PDF + C++ .tnz + manifest + zip）
+python -m konte_poc package examples\EP01\konte.json --out-root "X:\agent\build\deliverables" `
+  --exporter "X:\agent\build\opentoonz\Release\konte-export.exe" `
+  --base-psd "X:\agent\PhotoshopCT\footage\scfilms_StoryBoard.psd"
 ```
 
 ## 设计要点（对齐领域与规格）

@@ -33,6 +33,12 @@ cd poc; $env:PYTHONPATH = (Get-Location).Path
 
 或直接用 `scripts/run_demo.ps1`（自动找 Python、生成+导出+预览）。
 
+### 端到端交付打包（PDF + 真实 .tnz + 参考图 + manifest + zip）
+```powershell
+pwsh -File scripts/package_deliverable.ps1 -OutRoot "X:\agent\build\deliverables"
+# 产物：<OutRoot>\EP01\{scenes/*.tnz+ref, references/*.png, storyboard.pdf, manifest.json, DELIVERY.md} + EP01.zip
+```
+
 ## 2. 与规格的对应
 
 | 规格条目 | 落点 | 状态 |
@@ -43,7 +49,7 @@ cd poc; $env:PYTHONPATH = (Get-Location).Path
 | Q8 渲染位图参考层 | `render.render_reference`, ScenePlan `level.lock` | ✅ |
 | §5 导出内核 `.tnz` | `konte-core/`（C++：ScenePlan→.tnz，`KONTE_WITH_OPENTOONZ`） | ✅ 运行验证：7/7 真实 .tnz，帧数回读一致 |
 | §3 Bridge API | `bridge/src/konte_bridge/` | ✅（参考实现） |
-| §5.3 打包 | `export.py` 产物目录（scenes/references/manifest/pdf） | ✅（无 OT 依赖部分） |
+| §5.3 打包 | `package.py` / `scripts/package_deliverable.ps1`（tnz+refs+PDF+manifest+zip+校验） | ✅ 端到端 |
 | §8 PoC P1（OT 无头生成 .tnz） | 需 OpenToonz 源码与构建环境 | ⏳ 见下 |
 
 ## 3. 下一步（按 PoC 优先级）
@@ -55,9 +61,13 @@ cd poc; $env:PYTHONPATH = (Get-Location).Path
    - ✅ 参考层锁定（`setIsReadOnly` + 参考 PNG 只读）、声音列（`TXshSoundColumn`，验证 cut sounds=1）、
      `loadTnzFile` 重载校验通过。
    - ✅ 模板 `.tnz` 套用：**保留全部模板图层**（超长裁到 N、单帧静态层 hold 到 N），仅清空模板 notes；实测 1280×720 生效。参考层相对 `$scenefolder` 打包（无绝对路径）。
-2. **P4 收尾**：模板多套坐标配置（换 PSD）、字体授权锁定（Noto/Source Han）。
-3. **P2 Bridge 生产化**：内嵌 `QTcpServer/QWebSocketServer` 或加固 sidecar 启动生命周期。
-4. **P5 边界**：不同时长/超框/声音切片批量跑；>200 cut 性能与断点续。
+2. **P2｜端到端交付打包** — ✅ 完成
+   - `konte_poc package` / `scripts/package_deliverable.ps1`：Python（参考图/PDF/manifest/ScenePlan）+ C++（`.tnz`）
+     汇成交付目录；参考层相对引用；含 `DELIVERY.md` 与 `manifest` 校验；自动 zip。
+   - 实测 EP01：7 `.tnz` + 7 参考图 + `storyboard.pdf` + `manifest.json` → `EP01.zip`（0.68MB），verify 全 OK。
+3. **P4 收尾**：模板多套坐标配置（换 PSD）、字体授权锁定（Noto/Source Han）。
+4. **P2 Bridge 生产化**：内嵌 `QTcpServer/QWebSocketServer` 或加固 sidecar 启动生命周期。
+5. **P5 边界**：不同时长/超框/声音切片批量跑；>200 cut 性能与断点续。
 
 ## 4. 边界与约束（不漂移）
 
