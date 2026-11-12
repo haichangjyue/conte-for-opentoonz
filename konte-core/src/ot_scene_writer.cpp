@@ -10,6 +10,7 @@
 #include "toonz/tproject.h"
 #include "toonz/txsheet.h"
 #include "toonz/txshcell.h"
+#include "toonz/txshcolumn.h"
 #include "toonz/txshlevel.h"
 #include "toonz/txshsimplelevel.h"
 #include "toonz/txshnoteset.h"
@@ -109,13 +110,11 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
     scene.setScenePath(out);
     dbg("scene path set: " + outFile);
 
-    // 模板仅提供相机/fps/项目设置：清空模板自带的 cells 与 notes，避免内容泄漏
+    // 模板：保留全部模板图层（columns），仅清空模板 notes（避免 action/dialogue 泄漏）
     if (hasTemplate) {
       if (TXsheet* tx = scene.getXsheet()) {
-        while (tx->getColumnCount() > 0) tx->removeColumn(0);
         if (TXshNoteSet* nt = tx->getNotes()) nt->m_notes.clear();
-        tx->updateFrameCount();
-        dbg("template content cleared");
+        dbg("template layers kept: " + std::to_string(tx->getColumnCount()));
       }
     }
 
@@ -150,16 +149,42 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
     // 3) 时长钉定：参考层从第 1 帧 hold 到第 N 帧 → TXsheet 帧数 = N
     TXsheet* xsh = scene.getXsheet();
     if (!xsh) { err = "getXsheet() 为空"; return false; }
-    if (xsh->getColumnCount() == 0) xsh->insertColumn(0);  // 新建首列
 
-    TXshLevelP levelP(level);
     const int N = plan.duration.totalFrames;
+
+    // 参考层作为新列追加（模板图层全部保留，位于其左侧/下方）
+    TXshLevelP levelP(level);
+    const int refCol = xsh->getColumnCount();
+    xsh->insertColumn(refCol);
     const TFrameId fid(1);
     for (int row = 0; row < N; ++row) {
-      xsh->setCell(row, 0, TXshCell(levelP, fid));
+      xsh->setCell(row, refCol, TXshCell(levelP, fid));
     }
     xsh->updateFrameCount();
-    dbg("cells set, N=" + std::to_string(N));
+
+    // 模板图层处理：超长的裁到 N；单帧静态层（如安全框）hold 到第 N 帧
+    xsh->updateFrameCount();
+    bool adjusted = false;
+    for (int c = 0; c < xsh->getColumnCount(); ++c) {
+      TXshColumn* col = xsh->getColumn(c);
+      if (!col) continue;
+      if (auto* cc = dynamic_cast<TXshCellColumn*>(col)) {
+        int mf = cc->getMaxFrame();
+        if (mf >= N) {
+          cc->clearCells(N, mf - N + 1);
+          adjusted = true;
+        } else if (mf >= 0 && mf < N - 1 && cc->getRowCount() == 1) {
+          TXshCell last = cc->getCell(cc->getFirstRow());
+          for (int r = mf + 1; r < N; ++r) cc->setCell(r, last);
+          adjusted = true;
+        }
+      }
+    }
+    if (adjusted) {
+      xsh->updateFrameCount();
+      dbg("template layers adjusted (trim/hold) to N=" + std::to_string(N));
+    }
+    dbg("cells set, N=" + std::to_string(N) + " cols=" + std::to_string(xsh->getColumnCount()));
 
     // 4) 参考层锁定：TODO(P1-runtime) 按实际 OT 版本设置只读（TXshSimpleLevel 只读标志）。
     //    设计上参考层不再被编辑；此处保留锁定点，运行时按版本补 API。
