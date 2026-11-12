@@ -22,6 +22,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from . import minischema
@@ -29,6 +30,43 @@ from .export import export_project
 from .model import KonteProject
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _exporter_env(exporter: str | Path) -> dict:
+    """为 konte-export 子进程构造环境：DLL 搜索路径 + 隔离的 TOONZ 配置目录。
+
+    隔离可避免导出进程改写用户 OpenToonz 的 preferences.ini（含界面语言）。
+    """
+    env = os.environ.copy()
+    repo = _REPO_ROOT
+    parts = [str(Path(exporter).parent)]
+    candidates = [
+        os.environ.get("KONTE_QT_BIN"),
+        os.environ.get("KONTE_OPENCV_BIN"),
+        r"X:\agent\tools\Qt\5.15.2\msvc2019_64\bin",
+        r"X:\agent\tools\opencv\opencv\build\x64\vc16\bin",
+        str(repo / "toonz" / "thirdparty" / "libmypaint" / "dist" / "64"),
+        str(repo / "toonz" / "thirdparty" / "glew" / "glew-1.9.0" / "bin" / "64bit"),
+        str(repo / "toonz" / "thirdparty" / "glut" / "3.7.6" / "lib"),
+        r"C:\Windows\System32",
+        r"C:\Windows",
+    ]
+    for c in candidates:
+        if c and Path(c).exists():
+            parts.append(c)
+    env["PATH"] = os.pathsep.join(parts + [env.get("PATH", "")])
+
+    iso = Path(tempfile.gettempdir()) / "konte_ot_env"
+    mapping = {
+        "TOONZPROFILES": "profiles", "TOONZCONFIG": "config", "TOONZPROJECTS": "projects",
+        "TOONZLIBRARY": "library", "TOONZSTUDIOPALETTE": "studopalette", "TOONZFXPRESETS": "fxs",
+    }
+    for k, sub in mapping.items():
+        d = iso / sub
+        d.mkdir(parents=True, exist_ok=True)
+        env[k] = str(d)
+    env["TOONZROOT"] = str(repo / "toonz" / "stuff")
+    return env
 
 
 def _clean(d: Path):
@@ -87,9 +125,10 @@ def build_package(
         cmd = [str(exporter), "--sceneplans", str(build / "scenes"), "--out", str(pkg / "scenes")]
         if template:
             cmd += ["--template", str(template)]
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+        env = _exporter_env(exporter)
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
         if proc.returncode != 0:
-            tnz_error = (proc.stdout or "") + (proc.stderr or "")
+            tnz_error = (f"exit {proc.returncode}\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}")
         tnz_files = sorted(p.name for p in (pkg / "scenes").glob("*.tnz"))
         # 清理 C++ 导出内核的构建产物，保持交付目录干净
         for junk in ("export_report.json",):

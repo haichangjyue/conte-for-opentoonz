@@ -40,7 +40,8 @@
 
 - **图像 IO 未初始化**：`loadLevel` 对 png 返回 0 → 需 `Tiio::defineStd(); initImageIo();`（已在 `ot_scene_writer.cpp` 调用）。
 - **`ToonzScene::save` 仅留下 `<file>.tmp`** 未完成 replace（本环境实测）→ 内核在保存后检测并完成 `.tmp → .tnz` 改名兜底。
-- **参考层路径（已解决）**：`.tnz` 内记录 **`$scenefolder/<name>`**（如 `$scenefolder/EP01_C001.ref.png`）。用裸相对名会导致 OT 重载时解析到 0 帧空层（Xsheet 有列但无图像）。
+- **参考层路径（已解决）**：`.tnz` 内记录 **`$scenefolder/<stem>.0001.png`**（参考图存为带帧号的 `.0001.png`）。裸相对名或**无帧号文件名**会导致 OT 重载时 level 帧号为 `NO_FRAME(-2)`、与单元格 `0001` 不匹配 → 空白层。
+- **绝不要污染用户 OT 配置**：导出进程需在**进程内**用 `TEnv::setArgPathValue("TOONZPROFILES"/"TOONZCONFIG"/..., <临时目录>)` 覆盖路径（Windows 下 TEnv 只读注册表、不读环境变量）。否则运行导出会改写用户 `profiles/.../preferences.ini`，实测会把界面语言重置为 English。`konte-export` 已内置该隔离；`package.py` 也会传入隔离环境。
 - **音频**：仅当 ScenePlan 的 `sound.path` 提供音频时才写入声音列；演示工程未含音频，故其 `.tnz` 无音轨。
 - **模板**：`--template` 以模板 `.tnz` 为底，**保留模板全部图层（columns）**，仅清空模板 notes；模板层超长裁到 N、单帧静态层 hold 到 N；本 cut 参考层作为新列追加。实测模板 1280×720 生效、每 cut 两列。模板文件须为无 BOM、OT 可解析的 `.tnz`。
 - **参考层只读**：导出后把参考 PNG 置为只读；OT 重载时据此判定 level 只读（`.tnz` 本身不序列化该标志）。

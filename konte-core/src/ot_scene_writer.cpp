@@ -20,6 +20,7 @@
 #include "tfilepath.h"
 #include "tgeometry.h"
 #include "timage.h"
+#include "tenv.h"
 #include "tnzimage.h"   // initImageIo
 #include "tnzsound.h"   // initSoundIo
 #include "tiio_std.h"   // Tiio::defineStd
@@ -62,6 +63,12 @@ std::string inspectScene(const std::string& tnzPath) {
         catch (...) { o << " loadEx=?"; }
         o << " framesAfterLoad=" << sl->getFrameCount();
         try {
+          std::vector<TFrameId> vf;
+          sl->getFids(vf);
+          o << " fids=" << vf.size();
+          if (!vf.empty()) o << " fid0=" << vf[0].getNumber();
+        } catch (...) { o << " fidsEx"; }
+        try {
           TImageP img = sl->getFrame(TFrameId(1), false);
           o << " img=" << (img ? "yes" : "null");
         } catch (...) { o << " imgEx"; }
@@ -76,7 +83,13 @@ std::string inspectScene(const std::string& tnzPath) {
     }
     for (int c = 0; c < xsh->getColumnCount(); ++c) {
       TXshColumn* col = xsh->getColumn(c);
-      o << "col[" << c << "] maxFrame=" << (col ? col->getMaxFrame() : -1) << "\n";
+      o << "col[" << c << "] maxFrame=" << (col ? col->getMaxFrame() : -1);
+      if (auto* cc = dynamic_cast<TXshCellColumn*>(col)) {
+        TXshCell cell = cc->getCell(0);
+        o << " cell0Empty=" << (cell.isEmpty() ? 1 : 0);
+        if (!cell.isEmpty()) o << " cell0Fid=" << cell.m_frameId.getNumber();
+      }
+      o << "\n";
     }
     return o.str();
   } catch (const std::exception& e) { return std::string("inspect ex: ") + e.what(); }
@@ -90,6 +103,31 @@ static bool dbgOn() {
 }
 static void dbg(const std::string& m) {
   if (dbgOn()) { std::fprintf(stderr, "[ot] %s\n", m.c_str()); std::fflush(stderr); }
+}
+
+void configureIsolatedEnv() {
+  static bool done = false;
+  if (done) return;
+  done = true;
+  namespace fs = std::filesystem;
+  const char* envBase = std::getenv("KONTE_OT_ENV");
+  fs::path base = envBase && *envBase ? fs::path(envBase)
+                                      : fs::temp_directory_path() / "konte_ot_env";
+  struct Item { const char* key; const char* sub; };
+  const Item items[] = {
+      {"TOONZPROFILES", "profiles"}, {"TOONZCONFIG", "config"},
+      {"TOONZPROJECTS", "projects"}, {"TOONZLIBRARY", "library"},
+      {"TOONZSTUDIOPALETTE", "studopalette"}, {"TOONZFXPRESETS", "fxs"},
+  };
+  for (auto& it : items) {
+    fs::path d = base / it.sub;
+    std::error_code ec;
+    fs::create_directories(d, ec);
+    TEnv::setArgPathValue(it.key, d.string());
+  }
+  // stuff 目录：优先使用调用方传入的 TOONZROOT（避免读写用户安装目录）
+  const char* stuff = std::getenv("TOONZROOT");
+  if (stuff && *stuff) TEnv::setArgPathValue("TOONZROOT", stuff);
 }
 
 // m_text 为 HTML 文本；OT 的 Note 用 HTML 承载字体信息。做最小转义。
@@ -193,12 +231,13 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       }
     }
 
-    // 2) 参考层：复制到场景目录，并以相对文件名载入 → .tnz 记录相对 $scenefolder
+    // 2) 参考层：复制到场景目录，并以「带帧号」的文件名载入（否则 level 帧号为 NO_FRAME，与单元格不匹配 → 空白）
     std::filesystem::path outP(outFile);
     std::filesystem::path sceneDir = outP.parent_path();
     std::filesystem::path refAbs(plan.levelPath);
-    std::filesystem::path refLocal = sceneDir / refAbs.filename();
-    std::string levelLoadName = refAbs.filename().string();
+    std::string baseName = refAbs.stem().string();      // e.g. "EP01_C001.ref"
+    std::string levelLoadName = baseName + ".0001.png"; // e.g. "EP01_C001.ref.0001.png"
+    std::filesystem::path refLocal = sceneDir / levelLoadName;
     if (!refAbs.empty() && refAbs != refLocal) {
       std::error_code ec;
       std::filesystem::permissions(refLocal,
@@ -209,7 +248,7 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
     }
     dbg("loadLevel(relative): " + levelLoadName);
     std::vector<TFrameId> fids;
-    fids.push_back(TFrameId(1));  // 单张位图作为第 1 帧；不传会导致 level 0 帧（空层）
+    fids.push_back(TFrameId(1));  // 单张位图作为第 1 帧
     TXshLevel* level = scene.loadLevel(TFilePath(levelLoadName), nullptr, L"", fids);
     if (!level) {
       err = "loadLevel 失败: " + levelLoadName;
@@ -397,6 +436,7 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
 
 namespace konte {
 bool openToonzAvailable() { return false; }
+void configureIsolatedEnv() {}
 std::string inspectScene(const std::string&) { return "not built with OpenToonz"; }
 bool writeSceneWithOpenToonz(const ScenePlan&, const std::string&, const std::string&,
                              std::string& err) {

@@ -26,6 +26,8 @@ static std::string readFile(const fs::path& p) {
 }
 
 int main(int argc, char** argv) {
+  configureIsolatedEnv();
+
   // 诊断模式：konte-export --inspect <file.tnz>
   if (argc >= 3 && std::string(argv[1]) == "--inspect") {
     std::cout << inspectScene(argv[2]) << std::endl;

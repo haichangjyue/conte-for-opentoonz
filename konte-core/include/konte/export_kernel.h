@@ -44,6 +44,9 @@ public:
 // 是否在编译期接入了 OpenToonz（KONTE_WITH_OPENTOONZ）。
 bool openToonzAvailable();
 
+// 隔离 TOONZ 配置目录（避免改写用户 OpenToonz 的 preferences.ini）。需在任何 OT 操作前调用。
+void configureIsolatedEnv();
+
 // 诊断：用 OpenToonz 解析 .tnz，报告帧数/列/level 及参考图是否可加载。
 std::string inspectScene(const std::string& tnzPath);
 
