@@ -356,17 +356,22 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
         scene.getLevelSet()->insertLevel(sl);
         dbg("sound level frames=" + std::to_string(sl->getFrameCount()));
 
+        // 用临时声音列铺满单元格，再 assignLevels → 生成单个连续 ColumnLevel
+        TXshSoundColumn temp;
+        temp.setXsheet(xsh);
+        temp.setFrameRate(plan.fps);
+        int sndFrames = sl->getFrameCount();
+        for (int row = 0; row < N; ++row) {
+          int fid = (sndFrames > 0) ? (row < sndFrames ? row : sndFrames - 1) : 0;
+          temp.setCell(row, TXshCell(TXshLevelP(sl), TFrameId(fid)));
+        }
+
         TXshSoundColumn* sc = new TXshSoundColumn();
         int col = xsh->getColumnCount();
         xsh->insertColumn(col, sc);
         sc->setFrameRate(plan.fps);
-        int sndFrames = sl->getFrameCount();
-        for (int row = 0; row < N; ++row) {
-          int fid = (sndFrames > 0) ? (row < sndFrames ? row : sndFrames - 1) : 0;
-          sc->setCell(row, TXshCell(TXshLevelP(sl), TFrameId(fid)));
-        }
-        sc->updateCells(0, N);
-        dbg("sound column filled rows=" + std::to_string(N) + " sndFrames=" + std::to_string(sndFrames));
+        sc->assignLevels(&temp);
+        dbg("sound column single level frames=" + std::to_string(sndFrames));
       } catch (...) {
         dbg("sound load/add failed (ignored)");
       }

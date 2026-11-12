@@ -79,6 +79,6 @@ writeManifest(...);   // 与 PoC manifest 结构一致
   模板层超长裁到 N、单帧静态层 hold 到 N；本 cut 参考层作为**新列**追加。实测模板相机 1280×720 生效、每 cut 输出两列（模板层+参考层）。
 - **参考层命名（关键）**：参考图导出为 `<stem>.0001.png`，`.tnz` 内以 **`$scenefolder/<stem>.0001.png`** 记录。文件名**必须带帧号**：否则 OT 解析为 `NO_FRAME(-2)`，与单元格 `0001` 不匹配 → 空白层（Xsheet 有列但无画面）。
 - **配置隔离（关键）**：导出进程启动时调用 `configureIsolatedEnv()`（内部 `TEnv::setArgPathValue` 覆盖 `TOONZPROFILES/CONFIG/PROJECTS/...` 到临时目录）。Windows 下 `TEnv` 只读注册表、不读环境变量；不隔离会改写用户 OpenToonz 的 `preferences.ini`（实测会把界面语言重置为 English）。
-- **音频**：`cut.audio.path`（konte.schema 可选字段）经 ScenePlan 的 `sound.path` 传入；内核把 WAV 复制到场景目录并建立 `TXshSoundColumn`（逐帧对齐，验证 `sounds=1`）。**演示工程 EP01 已带音轨**（`audio/C001..C007.wav`，每个 cut 一轨）。
+- **音频**：`cut.audio.path`（konte.schema 可选字段）经 ScenePlan 的 `sound.path` 传入；内核把 WAV 复制到场景目录并建立**单个连续 `ColumnLevel`（0..N-1）** 的 `TXshSoundColumn`。注意：若用多个重叠 `SoundCells`，OT 在关闭时可能因声音列定时器/播放器状态异常而崩溃（EXCEPTION_ACCESS_VIOLATION in `TSoundOutputDevice::isPlaying`）；因此必须保持单一完整音轨。**演示工程 EP01 已带音轨**（`audio/C001..C007.wav`）。
 - **构建**：`pwsh -File scripts/build_kernel.ps1`（纯逻辑）；`pwsh -File scripts/build_export_with_ot.ps1`（真实 .tnz）。
 
