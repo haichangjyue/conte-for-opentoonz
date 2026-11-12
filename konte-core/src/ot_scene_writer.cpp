@@ -19,6 +19,7 @@
 #include "toonz/levelset.h"
 #include "tfilepath.h"
 #include "tgeometry.h"
+#include "timage.h"
 #include "tnzimage.h"   // initImageIo
 #include "tnzsound.h"   // initSoundIo
 #include "tiio_std.h"   // Tiio::defineStd
@@ -28,11 +29,59 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <sstream>
 #include <string>
 
 namespace konte {
 
 bool openToonzAvailable() { return true; }
+
+std::string inspectScene(const std::string& tnzPath) {
+  try {
+    static bool ioReady = false;
+    if (!ioReady) { Tiio::defineStd(); initImageIo(); initSoundIo(); ioReady = true; }
+    ToonzScene s;
+    TFilePath fp(tnzPath);
+    s.setScenePath(fp);
+    s.loadTnzFile(fp);
+    TXsheet* xsh = s.getXsheet();
+    if (!xsh) return "inspect: no xsheet";
+    xsh->updateFrameCount();
+    std::ostringstream o;
+    o << "frames=" << xsh->getFrameCount() << " cols=" << xsh->getColumnCount()
+      << " levels=" << s.getLevelSet()->getLevelCount() << "\n";
+    for (int i = 0; i < s.getLevelSet()->getLevelCount(); ++i) {
+      TXshLevel* lv = s.getLevelSet()->getLevel(i);
+      o << "level[" << i << "] name=" << QString::fromStdWString(lv->getName()).toStdString()
+        << " path=" << QString::fromStdWString(lv->getPath().getWideString()).toStdString();
+      if (auto* sl = dynamic_cast<TXshSimpleLevel*>(lv)) {
+        o << " type=simple";
+        bool loadOk = false;
+        try { sl->load(); loadOk = true; }
+        catch (const std::exception& e) { o << " loadEx=" << e.what(); }
+        catch (...) { o << " loadEx=?"; }
+        o << " framesAfterLoad=" << sl->getFrameCount();
+        try {
+          TImageP img = sl->getFrame(TFrameId(1), false);
+          o << " img=" << (img ? "yes" : "null");
+        } catch (...) { o << " imgEx"; }
+        try {
+          TFilePath dec = s.decodeFilePath(sl->getPath());
+          TImageP im2;
+          bool ok = TImageReader::load(dec, im2);
+          o << " readerImg=" << ((ok && im2) ? "yes" : "no");
+        } catch (...) { o << " readerEx"; }
+      }
+      o << "\n";
+    }
+    for (int c = 0; c < xsh->getColumnCount(); ++c) {
+      TXshColumn* col = xsh->getColumn(c);
+      o << "col[" << c << "] maxFrame=" << (col ? col->getMaxFrame() : -1) << "\n";
+    }
+    return o.str();
+  } catch (const std::exception& e) { return std::string("inspect ex: ") + e.what(); }
+  catch (...) { return "inspect unknown exception"; }
+}
 
 static bool dbgOn() {
   static int v = -1;
@@ -51,6 +100,32 @@ static QString toHtml(const std::string& s) {
   t.replace(">", "&gt;");
   t.replace("\n", "<br>");
   return t;
+}
+
+// 把 .tnz 中该 level 的 <path> 改写为 $scenefolder/<name>，保证脱离项目也能相对解析
+static bool rewriteToScenefolder(const std::string& file, const std::string& name) {
+  FILE* f = std::fopen(file.c_str(), "rb");
+  if (!f) return false;
+  std::fseek(f, 0, SEEK_END);
+  long n = std::ftell(f);
+  std::rewind(f);
+  std::string s;
+  if (n > 0) {
+    s.resize((size_t)n);
+    size_t rd = std::fread(&s[0], 1, (size_t)n, f);
+    s.resize(rd);
+  }
+  std::fclose(f);
+  if (s.find("\"$scenefolder/") != std::string::npos) return true;
+  std::string needle = "\"" + name + "\"";
+  size_t pos = s.find(needle);
+  if (pos == std::string::npos) return false;
+  s.replace(pos, needle.size(), "\"$scenefolder/" + name + "\"");
+  FILE* o = std::fopen(file.c_str(), "wb");
+  if (!o) return false;
+  std::fwrite(s.data(), 1, s.size(), o);
+  std::fclose(o);
+  return true;
 }
 
 // 重新用 OpenToonz 打开生成的 .tnz，校验帧数/声音/注记（P1 验收）
@@ -133,12 +208,16 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       dbg(std::string("ref copied into scene dir, ec=") + std::to_string(ec.value()));
     }
     dbg("loadLevel(relative): " + levelLoadName);
-    TXshLevel* level = scene.loadLevel(TFilePath(levelLoadName));
+    std::vector<TFrameId> fids;
+    fids.push_back(TFrameId(1));  // 单张位图作为第 1 帧；不传会导致 level 0 帧（空层）
+    TXshLevel* level = scene.loadLevel(TFilePath(levelLoadName), nullptr, L"", fids);
     if (!level) {
       err = "loadLevel 失败: " + levelLoadName;
       return false;
     }
     dbg("loadLevel ok");
+    if (auto* sl = dynamic_cast<TXshSimpleLevel*>(level))
+      dbg("level frames=" + std::to_string(sl->getFrameCount()));
 
     // 参考层只读锁定（Q8：决定稿后参考层不可编辑）
     if (auto* simple = dynamic_cast<TXshSimpleLevel*>(level)) {
@@ -276,6 +355,10 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       dbg(std::string("ref file readOnly=") + (ro ? "yes" : "no"));
     }
 
+    // 关键：把 level 路径写成 $scenefolder/<name>，否则重载时解析为 0 帧空层
+    if (rewriteToScenefolder(outFile, levelLoadName))
+      dbg("level path -> $scenefolder/" + levelLoadName);
+
     // 8) 回读校验：帧数必须 = N（P1 验收核心）
     int fc = -1;
     try {
@@ -314,6 +397,7 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
 
 namespace konte {
 bool openToonzAvailable() { return false; }
+std::string inspectScene(const std::string&) { return "not built with OpenToonz"; }
 bool writeSceneWithOpenToonz(const ScenePlan&, const std::string&, const std::string&,
                              std::string& err) {
   err = "未以 KONTE_WITH_OPENTOONZ 构建（需 OpenToonz 源码与依赖）";

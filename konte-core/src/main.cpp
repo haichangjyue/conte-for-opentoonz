@@ -26,6 +26,12 @@ static std::string readFile(const fs::path& p) {
 }
 
 int main(int argc, char** argv) {
+  // 诊断模式：konte-export --inspect <file.tnz>
+  if (argc >= 3 && std::string(argv[1]) == "--inspect") {
+    std::cout << inspectScene(argv[2]) << std::endl;
+    return 0;
+  }
+
   std::string sceneDir, outDir, templatePath;
   bool dryRun = false, overwrite = false;
 

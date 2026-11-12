@@ -44,6 +44,9 @@ public:
 // 是否在编译期接入了 OpenToonz（KONTE_WITH_OPENTOONZ）。
 bool openToonzAvailable();
 
+// 诊断：用 OpenToonz 解析 .tnz，报告帧数/列/level 及参考图是否可加载。
+std::string inspectScene(const std::string& tnzPath);
+
 // 用 OpenToonz 生成单个 .tnz。未接入 OT 时返回 false 并写 err。
 bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
                              const std::string& templatePath, std::string& err);

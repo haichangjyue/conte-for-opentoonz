@@ -77,6 +77,7 @@ writeManifest(...);   // 与 PoC manifest 结构一致
   `docs/BUILD_ENV_WINDOWS.md` / `scripts/build_export_with_ot.ps1`。
 - **模板与打包（2026-11-12 收尾）**：`--template` 以模板 `.tnz` 为底，**保留模板全部图层（columns）**、仅清空模板 notes；
   模板层超长裁到 N、单帧静态层 hold 到 N；本 cut 参考层作为**新列**追加。实测模板相机 1280×720 生效、每 cut 输出两列（模板层+参考层）。
-  参考层复制到场景目录并以相对文件名载入，`.tnz` 记录**相对路径**（`"EP01_C001.ref.png"`，无绝对路径）。
+  参考层复制到场景目录并以 **`$scenefolder/EP01_C001.ref.png`** 形式记录（OT 在无项目上下文下也能解析；裸相对名会被当成 0 帧空层）。
+- **音频**：仅当 `ScenePlan.sound.path` 提供音频文件时才写入 `TXshSoundLevel`+`TXshSoundColumn`（已验证 cut `sounds=1`）；演示工程未含音频，故其 `.tnz` 无音轨。
 - **构建**：`pwsh -File scripts/build_kernel.ps1`（纯逻辑）；`pwsh -File scripts/build_export_with_ot.ps1`（真实 .tnz）。
 
