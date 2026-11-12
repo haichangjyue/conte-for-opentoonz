@@ -183,6 +183,14 @@
         "action": { "type": "string" },
         "dialogue": { "type": "array", "items": { "$ref": "#/$defs/dialogueLine" } },
         "musicSe": { "type": "array", "items": { "$ref": "#/$defs/musicSe" } },
+        "audio": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["path"],
+          "properties": {
+            "path": { "type": "string", "description": "音频文件路径（wav），相对项目或绝对" }
+          }
+        },
         "camera": { "$ref": "#/$defs/camera" },
         "state": { "enum": ["draft", "final"], "description": "单 cut 定稿状态" },
         "lock": { "$ref": "#/$defs/lock" },

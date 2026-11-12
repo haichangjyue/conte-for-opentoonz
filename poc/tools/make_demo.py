@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import json
 import math
+import struct
 import sys
+import wave
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -67,6 +69,26 @@ def _panel(path: Path, cut_label: str, title: str, w: int, h: int, seed: int) ->
     im.save(path, "PNG")
 
 
+def _wav(path: Path, seconds: float, freq: float) -> None:
+    """生成一段简单提示音 WAV（用于演示“带音轨”的导出）。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rate = 22050
+    n = max(1, int(seconds * rate))
+    fade = max(1, int(0.05 * rate))
+    with wave.open(str(path), "w") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        frames = bytearray()
+        for k in range(n):
+            env = min(1.0, k / fade, (n - k) / fade)
+            # 轻微颤音，听感更像“对白提示”
+            f = freq * (1.0 + 0.02 * math.sin(2 * math.pi * 3.0 * k / rate))
+            v = int(10000 * env * math.sin(2 * math.pi * f * k / rate))
+            frames += struct.pack("<h", v)
+        w.writeframes(bytes(frames))
+
+
 def make(out: Path) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     panels = out / "panels"
@@ -86,6 +108,8 @@ def make(out: Path) -> Path:
     cuts = []
     for i, (cut, title, sec, frm, kind, (pw, ph)) in enumerate(spec):
         _panel(panels / f"{cut}.png", cut, title, pw, ph, seed=i)
+        dur_sec = (sec * FPS + frm) / float(FPS)
+        _wav(out / "audio" / f"{cut}.wav", dur_sec, 220.0 + 40.0 * i)
         rect = {"x": 0, "y": 0, "w": FRAME_W, "h": FRAME_H}
         if kind == "oversize":
             rect = {"x": -240, "y": 0, "w": FRAME_W + 480, "h": FRAME_H}
@@ -117,6 +141,7 @@ def make(out: Path) -> Path:
                 {"character": "AKIRA", "text": "……行くぞ。", "offscreen": False},
             ] if i % 2 == 0 else [],
             "musicSe": [{"text": "SE: 足音", "atFrame": 0}] if i == 4 else [],
+            "audio": {"path": f"audio/{cut}.wav"},
             "camera": {"note": "固定" if kind == "standard" else "横摇（超框 bleed）", "keyframes": []},
             "state": "final",
             "lock": None,

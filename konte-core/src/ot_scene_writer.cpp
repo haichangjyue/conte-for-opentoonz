@@ -50,7 +50,13 @@ std::string inspectScene(const std::string& tnzPath) {
     xsh->updateFrameCount();
     std::ostringstream o;
     o << "frames=" << xsh->getFrameCount() << " cols=" << xsh->getColumnCount()
-      << " levels=" << s.getLevelSet()->getLevelCount() << "\n";
+      << " levels=" << s.getLevelSet()->getLevelCount();
+    try {
+      std::vector<TXshSoundColumn*> scs;
+      s.getSoundColumns(scs);
+      o << " soundColumns=" << scs.size();
+    } catch (...) { o << " soundColumns=?"; }
+    o << "\n";
     for (int i = 0; i < s.getLevelSet()->getLevelCount(); ++i) {
       TXshLevel* lv = s.getLevelSet()->getLevel(i);
       o << "level[" << i << "] name=" << QString::fromStdWString(lv->getName()).toStdString()
@@ -154,7 +160,7 @@ static bool rewriteToScenefolder(const std::string& file, const std::string& nam
     s.resize(rd);
   }
   std::fclose(f);
-  if (s.find("\"$scenefolder/") != std::string::npos) return true;
+  if (s.find("\"$scenefolder/" + name + "\"") != std::string::npos) return true;
   std::string needle = "\"" + name + "\"";
   size_t pos = s.find(needle);
   if (pos == std::string::npos) return false;
@@ -330,24 +336,37 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
       }
     }
 
-    // 6) 声音：若 plan.hasSound，加入 TXshSoundColumn 并按帧对齐
+    // 6) 声音：若 plan.hasSound，把 WAV 复制到场景目录并用 assignLevels 建立连续音轨
+    std::string soundLocalName;
     if (plan.hasSound && !plan.soundPath.empty()) {
       try {
-        TFilePath sp(plan.soundPath);
+        std::filesystem::path sndAbs(plan.soundPath);
+        soundLocalName = sndAbs.filename().string();
+        std::filesystem::path sndLocal = sceneDir / soundLocalName;
+        if (!sndAbs.empty() && sndAbs != sndLocal) {
+          std::error_code ec;
+          std::filesystem::copy_file(sndAbs, sndLocal,
+              std::filesystem::copy_options::overwrite_existing, ec);
+        }
         TXshSoundLevel* sl = new TXshSoundLevel(L"SE");
         sl->setScene(&scene);
-        sl->setPath(sp);
+        sl->setPath(TFilePath("$scenefolder/" + soundLocalName));
         sl->setFrameRate(plan.fps);
         sl->load();
         scene.getLevelSet()->insertLevel(sl);
+        dbg("sound level frames=" + std::to_string(sl->getFrameCount()));
+
         TXshSoundColumn* sc = new TXshSoundColumn();
         int col = xsh->getColumnCount();
         xsh->insertColumn(col, sc);
         sc->setFrameRate(plan.fps);
-        for (int row = 0; row < N; ++row)
-          sc->setCell(row, TXshCell(TXshLevelP(sl), TFrameId(1)));
+        int sndFrames = sl->getFrameCount();
+        for (int row = 0; row < N; ++row) {
+          int fid = (sndFrames > 0) ? (row < sndFrames ? row : sndFrames - 1) : 0;
+          sc->setCell(row, TXshCell(TXshLevelP(sl), TFrameId(fid)));
+        }
         sc->updateCells(0, N);
-        dbg("sound column added");
+        dbg("sound column filled rows=" + std::to_string(N) + " sndFrames=" + std::to_string(sndFrames));
       } catch (...) {
         dbg("sound load/add failed (ignored)");
       }
@@ -397,6 +416,8 @@ bool writeSceneWithOpenToonz(const ScenePlan& plan, const std::string& outFile,
     // 关键：把 level 路径写成 $scenefolder/<name>，否则重载时解析为 0 帧空层
     if (rewriteToScenefolder(outFile, levelLoadName))
       dbg("level path -> $scenefolder/" + levelLoadName);
+    if (!soundLocalName.empty() && rewriteToScenefolder(outFile, soundLocalName))
+      dbg("sound path -> $scenefolder/" + soundLocalName);
 
     // 8) 回读校验：帧数必须 = N（P1 验收核心）
     int fc = -1;

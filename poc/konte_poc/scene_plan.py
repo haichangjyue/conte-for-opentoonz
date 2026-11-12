@@ -7,7 +7,19 @@ Python PoC 负责把 konte.json 归一成与 OT 无关、可序列化、可逐�
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from .model import KonteProject
+
+
+def _resolve_audio(project: KonteProject, cut: dict):
+    audio = cut.get("audio")
+    if not audio or not audio.get("path"):
+        return None
+    p = Path(audio["path"])
+    if not p.is_absolute():
+        p = project.base_dir / p
+    return {"path": str(p.resolve())}
 
 
 def scene_filename(project: KonteProject, cut: dict) -> str:
@@ -61,6 +73,6 @@ def build_scene_plan(project: KonteProject, cut: dict) -> dict:
             "cameraBox": project.project.get("cameraBox"),
         },
         "camera": cut.get("camera", {"note": "", "keyframes": []}),
-        "sound": cut.get("sound"),
+        "sound": _resolve_audio(project, cut),
         "sequenceId": cut.get("sequenceId"),
     }
